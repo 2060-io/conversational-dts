@@ -53,7 +53,7 @@ public class MoConsumer extends AbstractConsumer<BaseMessage> implements Consume
 	
 	void onStart(@Observes StartupEvent ev) {
 
-		logger.info("onStart: SaConsumer queueName: " + _queueName);
+		//logger.info("onStart: Service Agent Consumer [MoConsumer] queueName: " + _queueName);
 
 		this.setExDelay(_exDelay);
 		this.setDebug(controller.isDebugEnabled());
@@ -66,7 +66,7 @@ public class MoConsumer extends AbstractConsumer<BaseMessage> implements Consume
 
     void onStop(@Observes ShutdownEvent ev) {
 
-    	logger.info("onStop: SaConsumer");
+    	//logger.info("onStop: Service Agent Consumer [MoConsumer]");
 
     	//super._onStop();
 
@@ -128,6 +128,7 @@ public class MoConsumer extends AbstractConsumer<BaseMessage> implements Consume
     private boolean stopped = true;
     
     public void start() {
+    	logger.info("start: starting Service Agent Consumers [MoConsumer]");
     	synchronized (controlerLockObj) {
     		try {
     			started = true;
@@ -141,6 +142,7 @@ public class MoConsumer extends AbstractConsumer<BaseMessage> implements Consume
     }
     
     public void stop() {
+    	logger.info("stop: stopping Service Agent Consumers [MoConsumer]");
     	synchronized (controlerLockObj) {
     		try {
     			stopped = true;

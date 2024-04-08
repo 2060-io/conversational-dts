@@ -4,6 +4,8 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.jboss.logging.Logger;
 
+import com.mobiera.commons.ApiConstants;
+
 import io.quarkus.runtime.ShutdownEvent;
 import io.quarkus.runtime.StartupEvent;
 import io.twentysixty.dts.conversational.svc.Controller;
@@ -44,14 +46,14 @@ public class EntityStateChangeEventConsumer extends AbstractConsumer<EntityState
 
 	void onStart(@Observes StartupEvent ev) {
 
-		logger.info("onStart: EntityStateChangeEventConsumer");
+		//logger.info("onStart: EntityStateChangeEventConsumer");
 
 		
     }
 
     void onStop(@Observes ShutdownEvent ev) {
 
-    	logger.info("onStop: EntityStateChangeEventConsumer");
+    	//logger.info("onStop: EntityStateChangeEventConsumer");
 
     	if (!this.isStopped()) {
     		super._onStop();
@@ -72,6 +74,8 @@ public class EntityStateChangeEventConsumer extends AbstractConsumer<EntityState
     private boolean stopped = true;
     
     public void start() {
+    	logger.info("start: starting Orchestrator Event Consumer [EntityStateChangeEventConsumer]");
+    	
     	synchronized (controlerLockObj) {
     		try {
     			started = true;
@@ -92,6 +96,7 @@ public class EntityStateChangeEventConsumer extends AbstractConsumer<EntityState
     }
     
     public void stop() {
+    	logger.info("stop: stopping Orchestrator Event Consumer [EntityStateChangeEventConsumer]");
     	synchronized (controlerLockObj) {
     		try {
     			stopped = true;
@@ -130,6 +135,9 @@ public class EntityStateChangeEventConsumer extends AbstractConsumer<EntityState
 		return false;
 	}
 
-	
+	@Override
+	public String getMessageSelector() {
+		return EntityStateChangeEvent.INSTANCE_ID_NAME + "='" + Controller.getInstanceid() + "'";
+	}
 
 }

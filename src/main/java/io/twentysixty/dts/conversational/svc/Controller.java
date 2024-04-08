@@ -49,7 +49,15 @@ public class Controller {
 	
 	private static ConversationalServiceVO dtsConfig = null;
 	
-	private static final long minimumRegisterWaitTimeMs = 5000l;
+	@ConfigProperty(name = "io.twentysixty.orchestrator.register.min.wait")
+	Long minimumRegisterWaitTimeMs;
+
+	@ConfigProperty(name = "io.twentysixty.dts.conversational.jms.event.ignore.after.ms")
+	Long ignoreEventsOlderThanMs;
+	
+	
+	
+	
 	
 	@ConfigProperty(name = "io.twentysixty.dts.orchestrator")
 	Boolean orchestrator;
@@ -124,7 +132,9 @@ public class Controller {
 						registryId = rr.getRegistryId();
 						expireRegisterTs = rr.getExpireTs();
 						//logger.info("registerTask: registered");
-						
+						if (isDebugEnabled()) {
+							logger.info("registerTask: registered OK, registryId: " + registryId + " expireTs: " + expireRegisterTs);
+						}
 						
 						
 					} catch (jakarta.ws.rs.WebApplicationException e) {
@@ -149,6 +159,10 @@ public class Controller {
 							if (getMyServiceResponse.getStatus()<300) {
 								dtsConfig = (ConversationalServiceVO) getMyServiceResponse.readEntity(ConversationalServiceVO.class);
 								startStop = true;
+								
+								logger.info("registerTask: loaded config OK, DTS: " + dtsConfig.getName() + " " + dtsConfig.getId() + " state: " + dtsConfig.getState() + " debug: " + dtsConfig.getDebug());
+
+								
 							}
 							
 						} catch (Exception e) {
@@ -223,11 +237,22 @@ public class Controller {
 	
 	public void entityStateChangeEventReceived(EntityStateChangeEvent event) throws InterruptedException {
 		
+		
 		if (isDebugEnabled()) {
 			try {
 				logger.info("serviceStatusEventReceived: notification received " + JsonUtil.serialize(event, false));
 			} catch (JsonProcessingException e) {
 				
+			}
+		}
+		
+		if ((event.getTs() == null) || ( (Instant.now().toEpochMilli() - event.getTs().toEpochMilli()) > ignoreEventsOlderThanMs)) {
+			if (isDebugEnabled()) {
+				try {
+					logger.info("serviceStatusEventReceived: notification received " + JsonUtil.serialize(event, false) + " ignoring... ts: " + event.getTs());
+				} catch (JsonProcessingException e) {
+					
+				}
 			}
 		}
 		
@@ -248,6 +273,8 @@ public class Controller {
 									
 									dtsConfig = (ConversationalServiceVO) getMyServiceResponse.readEntity(ConversationalServiceVO.class);
 									startStop = true;
+									logger.info("registerTask: loaded config OK, DTS: " + dtsConfig.getName() + " " + dtsConfig.getId() + " state: " + dtsConfig.getState() + " debug: " + dtsConfig.getDebug());
+
 								}
 								
 							} catch (Exception e) {
@@ -314,7 +341,6 @@ public class Controller {
 				
 				{
 					
-					logger.info("serviceStatusEventReceived: notification received, stopping Conversational Service " + getDtsConfig().getName());
 					
 					if (!mtConsumer.isStopped()) {
 						mtConsumer.stop();
@@ -339,5 +365,9 @@ public class Controller {
 		if (getDtsConfig() == null) return true;
 		if (getDtsConfig().getDebug() == null) return true;
 		else return getDtsConfig().getDebug();
+	}
+
+	public static UUID getInstanceid() {
+		return instanceId;
 	}
 }

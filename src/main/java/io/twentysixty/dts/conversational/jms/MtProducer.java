@@ -56,7 +56,7 @@ public class MtProducer extends AbstractProducer {
 
 
     void onStart(@Observes StartupEvent ev) {
-    	logger.info("onStart: BeProducer");
+    	//logger.info("onStart: BeProducer");
 
     	this.setExDelay(_exDelay);
 		this.setDebug(controller.isDebugEnabled());
@@ -70,7 +70,7 @@ public class MtProducer extends AbstractProducer {
 
     void onStop(@Observes ShutdownEvent ev) {
 
-    	logger.info("onStop: BeProducer");
+    	//logger.info("onStop: BeProducer");
     }
 
 

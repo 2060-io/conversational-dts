@@ -46,7 +46,7 @@ public class MtConsumer extends AbstractConsumer<BaseMessage> implements Consume
 
 	void onStart(@Observes StartupEvent ev) {
 
-		logger.info("onStart: BeConsumer queueName: " + _queueName);
+		//logger.info("onStart: Backend Consumer [MtConsumer] queueName: " + _queueName);
 
 		this.setExDelay(_exDelay);
 		this.setDebug(controller.isDebugEnabled());
@@ -59,7 +59,7 @@ public class MtConsumer extends AbstractConsumer<BaseMessage> implements Consume
 
     void onStop(@Observes ShutdownEvent ev) {
 
-    	logger.info("onStop: BeConsumer");
+    	//logger.info("onStop: Backend Consumer [MtConsumer]");
 
     	if (!this.isStopped()) {
     		super._onStop();
@@ -80,6 +80,10 @@ public class MtConsumer extends AbstractConsumer<BaseMessage> implements Consume
     private boolean stopped = true;
     
     public void start() {
+    	
+    	logger.info("start: starting Backend Consumers [MtConsumer]");
+    	
+    	
     	synchronized (controlerLockObj) {
     		try {
     			started = true;
@@ -93,6 +97,8 @@ public class MtConsumer extends AbstractConsumer<BaseMessage> implements Consume
     }
     
     public void stop() {
+    	
+    	logger.info("stop: stopping Backend Consumers [MtConsumer]");
     	synchronized (controlerLockObj) {
     		try {
     			stopped = true;
@@ -108,7 +114,7 @@ public class MtConsumer extends AbstractConsumer<BaseMessage> implements Consume
 	public boolean isStarted() {
 		
 		
-		synchronized (controlerLockObj) {
+    	synchronized (controlerLockObj) {
 			try {
 				return started;
 			} catch (Exception e) {

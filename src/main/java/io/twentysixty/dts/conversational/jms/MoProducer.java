@@ -56,7 +56,7 @@ public class MoProducer extends AbstractProducer implements ProducerInterface {
 
 
     void onStart(@Observes StartupEvent ev) {
-    	logger.info("onStart: SaProducer");
+    	//logger.info("onStart: SaProducer");
 
     	this.setExDelay(_exDelay);
 		this.setDebug(controller.isDebugEnabled());
@@ -68,7 +68,7 @@ public class MoProducer extends AbstractProducer implements ProducerInterface {
     }
 
     void onStop(@Observes ShutdownEvent ev) {
-    	logger.info("onStop: SaProducer");
+    	//logger.info("onStop: SaProducer");
     }
 
 
