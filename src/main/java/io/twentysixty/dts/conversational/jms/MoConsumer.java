@@ -26,7 +26,7 @@ import jakarta.inject.Inject;
 import jakarta.jms.ConnectionFactory;
 
 @ApplicationScoped
-public class MoConsumer extends AbstractConsumer implements ConsumerInterface {
+public class MoConsumer extends AbstractConsumer<BaseMessage> implements ConsumerInterface<BaseMessage> {
 
 	@Inject Service gaiaService;
 

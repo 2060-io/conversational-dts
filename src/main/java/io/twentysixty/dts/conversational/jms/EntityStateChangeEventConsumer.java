@@ -7,6 +7,7 @@ import org.jboss.logging.Logger;
 import io.quarkus.runtime.ShutdownEvent;
 import io.quarkus.runtime.StartupEvent;
 import io.twentysixty.dts.conversational.svc.Controller;
+import io.twentysixty.orchestrator.api.EntityStateChangeEvent;
 import io.twentysixty.sa.client.jms.AbstractConsumer;
 import io.twentysixty.sa.client.jms.ConsumerInterface;
 import io.twentysixty.sa.client.model.message.BaseMessage;
@@ -17,7 +18,7 @@ import jakarta.inject.Inject;
 import jakarta.jms.ConnectionFactory;
 
 @ApplicationScoped
-public class MtConsumer extends AbstractConsumer<BaseMessage> implements ConsumerInterface<BaseMessage> {
+public class EntityStateChangeEventConsumer extends AbstractConsumer<EntityStateChangeEvent> implements ConsumerInterface<EntityStateChangeEvent> {
 
 	@RestClient
 	@Inject
@@ -31,35 +32,26 @@ public class MtConsumer extends AbstractConsumer<BaseMessage> implements Consume
 	@ConfigProperty(name = "io.twentysixty.dts.conversational.jms.ex.delay")
 	Long _exDelay;
 
-
-	@ConfigProperty(name = "io.twentysixty.dts.conversational.jms.mt.queue.name")
-	String _queueName;
-
-	@ConfigProperty(name = "io.twentysixty.dts.conversational.jms.mt.consumer.threads")
+	
+	@ConfigProperty(name = "io.twentysixty.dts.conversational.jms.event.consumer.threads")
 	Integer _threads;
 
 	@Inject Controller controller;
 
-	private static final Logger logger = Logger.getLogger(MtConsumer.class);
+	private static final Logger logger = Logger.getLogger(EntityStateChangeEventConsumer.class);
 
 
 
 	void onStart(@Observes StartupEvent ev) {
 
-		logger.info("onStart: BeConsumer queueName: " + _queueName);
+		logger.info("onStart: EntityStateChangeEventConsumer");
 
-		this.setExDelay(_exDelay);
-		this.setDebug(controller.isDebugEnabled());
-		this.setQueueName(_queueName);
-		this.setThreads(_threads);
-		this.setConnectionFactory(_connectionFactory);
-		//super._onStart();
-
+		
     }
 
     void onStop(@Observes ShutdownEvent ev) {
 
-    	logger.info("onStop: BeConsumer");
+    	logger.info("onStop: EntityStateChangeEventConsumer");
 
     	if (!this.isStopped()) {
     		super._onStop();
@@ -69,9 +61,9 @@ public class MtConsumer extends AbstractConsumer<BaseMessage> implements Consume
     }
 
     @Override
-	public void receiveMessage(BaseMessage message) throws Exception {
+	public void receiveMessage(EntityStateChangeEvent message) throws Exception {
 
-		messageResource.sendMessage(message);
+		controller.entityStateChangeEventReceived(message);
 
 	}
 
@@ -83,7 +75,14 @@ public class MtConsumer extends AbstractConsumer<BaseMessage> implements Consume
     	synchronized (controlerLockObj) {
     		try {
     			started = true;
+    			this.setExDelay(_exDelay);
+    			this.setDebug(controller.isDebugEnabled());
+    			this.setQueueName(Controller.getRegistryId().toString());
+    			this.setThreads(_threads);
+    			this.setConnectionFactory(_connectionFactory);
     			super._onStart();
+
+    			
     			stopped = false;
     		} catch (Exception e) {
     			logger.error("start: ", e);

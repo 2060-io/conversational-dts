@@ -24,10 +24,7 @@ public abstract class AbstractProducer {
 
 	private Object contextLockObj = new Object();
     
-	
-
-	
-	
+		
 	protected Pair<Integer, Pair<JMSContext, JMSProducer>> getProducer(ConnectionFactory connectionFactory, boolean debug) {
     	JMSProducer producer = null;
     	JMSContext context = null;

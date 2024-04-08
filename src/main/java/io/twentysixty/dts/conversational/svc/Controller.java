@@ -16,6 +16,7 @@ import io.quarkus.runtime.ShutdownEvent;
 import io.quarkus.runtime.StartupEvent;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.infrastructure.Infrastructure;
+import io.twentysixty.dts.conversational.jms.EntityStateChangeEventConsumer;
 import io.twentysixty.dts.conversational.jms.MoConsumer;
 import io.twentysixty.dts.conversational.jms.MtConsumer;
 import io.twentysixty.orchestrator.api.EntityStateChangeEvent;
@@ -44,7 +45,7 @@ public class Controller {
 	private static final UUID instanceId = UUID.randomUUID();
 	private static UUID registryId = null;
 	
-	private static Instant expireRegisterTs = Instant.now();
+	private static Instant expireRegisterTs = null;
 	
 	private static ConversationalServiceVO dtsConfig = null;
 	
@@ -69,6 +70,8 @@ public class Controller {
 	MtConsumer mtConsumer;
 	@Inject
 	MoConsumer moConsumer;
+	@Inject
+	EntityStateChangeEventConsumer eventConsumer;
 	
 	private static ExecutorService executor = Executors.newCachedThreadPool();
 	
@@ -117,12 +120,22 @@ public class Controller {
 					
 					try {
 						Response response = registerResource.register(App.CONVERSATIONAL_SERVICE, entityId, instanceId);
+						RegisterResponse rr = (RegisterResponse) response.readEntity(RegisterResponse.class);
+						registryId = rr.getRegistryId();
+						expireRegisterTs = rr.getExpireTs();
+						//logger.info("registerTask: registered");
 						
-						if (response.getStatus()<300) {
-							RegisterResponse rr = (RegisterResponse) response.readEntity(RegisterResponse.class);
-							registryId = rr.getRegistryId();
-							expireRegisterTs = rr.getExpireTs();
+						
+						
+					} catch (jakarta.ws.rs.WebApplicationException e) {
+						if (e.getMessage().contains("404")) {
+							logger.error("registerTask: cannot register: service returned response 404 make sure a Conversational Service with id " + entityId + " exists");
+						
+						} else {
+							logger.error("registerTask: cannot register: ", e);
+							
 						}
+						
 					} catch (Exception e) {
 						logger.error("registerTask: cannot register: ", e);
 					}
@@ -208,7 +221,7 @@ public class Controller {
 		return dtsConfig;
 	}
 	
-	public void serviceStatusEventReceived(EntityStateChangeEvent event) throws InterruptedException {
+	public void entityStateChangeEventReceived(EntityStateChangeEvent event) throws InterruptedException {
 		
 		if (isDebugEnabled()) {
 			try {
@@ -260,10 +273,21 @@ public class Controller {
 	
 	private static Object controlerLockObj = new Object();
 	
+	
+	
+	
+	
+	
+	
 	private void startStop() {
 
 		
+		
 		synchronized (controlerLockObj) {
+			if (!eventConsumer.isStarted()) {
+				eventConsumer.start();
+			}
+			
 			try {
 				
 				switch (getDtsConfig().getState()) {
@@ -313,7 +337,7 @@ public class Controller {
 
 	public boolean isDebugEnabled() {
 		if (getDtsConfig() == null) return true;
-		
+		if (getDtsConfig().getDebug() == null) return true;
 		else return getDtsConfig().getDebug();
 	}
 }
