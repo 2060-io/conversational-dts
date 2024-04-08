@@ -4,16 +4,7 @@ package io.twentysixty.dts.conversational.jms;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.event.Observes;
-import jakarta.inject.Inject;
-import jakarta.jms.ConnectionFactory;
-import jakarta.jms.JMSContext;
-import jakarta.jms.JMSException;
-import jakarta.jms.JMSProducer;
-import jakarta.jms.ObjectMessage;
-import jakarta.jms.Queue;
+import java.util.UUID;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.graalvm.collections.Pair;
@@ -27,6 +18,16 @@ import com.mobiera.ms.commons.stats.api.StatEvent;
 
 import io.quarkus.runtime.ShutdownEvent;
 import io.quarkus.runtime.StartupEvent;
+import io.twentysixty.dts.conversational.svc.Controller;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Observes;
+import jakarta.inject.Inject;
+import jakarta.jms.ConnectionFactory;
+import jakarta.jms.JMSContext;
+import jakarta.jms.JMSException;
+import jakarta.jms.JMSProducer;
+import jakarta.jms.ObjectMessage;
+import jakarta.jms.Queue;
 
 
 @ApplicationScoped
@@ -36,17 +37,16 @@ public class StatProducer extends AbstractProducer {
     ConnectionFactory connectionFactory;
 
 	
-	@ConfigProperty(name = "io.twentysixty.hologram.welcome.jms.ex.delay")
+	@ConfigProperty(name = "io.twentysixty.dts.conversational.jms.ex.delay")
 	Long _exDelay;
 
-	@ConfigProperty(name = "io.twentysixty.hologram.welcome.jms.stats.queue.name")
+	@ConfigProperty(name = "io.twentysixty.dts.conversational.jms.stats.queue.name")
 	String _queueName;
 
-	@ConfigProperty(name = "io.twentysixty.hologram.welcome.jms.stats.producer.threads")
+	@ConfigProperty(name = "io.twentysixty.dts.conversational.jms.stats.producer.threads")
 	Integer _threads;
 
-	@ConfigProperty(name = "io.twentysixty.hologram.welcome.debug")
-	Boolean _debug;
+	@Inject Controller controller;
 
 	
 	
@@ -56,10 +56,7 @@ public class StatProducer extends AbstractProducer {
 	int id = 0;
     
     
-    public boolean isDebugEnabled() {
-		return _debug;
-	}
-    
+   
     
     void onStart(@Observes StartupEvent ev) {
     	logger.info("onStart: queue name " + _queueName);
@@ -71,7 +68,7 @@ public class StatProducer extends AbstractProducer {
     }
  
     public void spool(String statClass, 
-    		Long smppAccountId, 
+    		UUID entityId, 
     		List<StatEnum> enums, 
     		Instant ts, 
     		Integer increment) throws JMSException {
@@ -83,7 +80,7 @@ public class StatProducer extends AbstractProducer {
     	}
     	
     	StatEvent event = new StatEvent();
-    	event.setEntityId(smppAccountId.toString());
+    	event.setEntityId(entityId.toString());
     	event.setEnums(statEnums);
     	event.setIncrement(increment);
     	event.setTs(ts);
@@ -93,13 +90,13 @@ public class StatProducer extends AbstractProducer {
     
     public void spool(
     		String statClass, 
-    		Long smppAccountId, 
+    		UUID entityId, 
     		StatEnum statEnum, 
     		Instant ts, 
     		int increment) throws JMSException {
     	
     	StatEvent event = new StatEvent();
-    	event.setEntityId(smppAccountId.toString());
+    	event.setEntityId(entityId.toString());
     	List<StatEnum> statEnums = new ArrayList<StatEnum>(1);
     	statEnums.add(CommonStatEnum.build(statEnum.getIndex(), statEnum.getValue()));
     	event.setEnums(statEnums);
@@ -121,7 +118,7 @@ public class StatProducer extends AbstractProducer {
     	
     	try {
     		
-    		Pair<Integer, Pair<JMSContext, JMSProducer>> jms = getProducer(connectionFactory, isDebugEnabled());
+    		Pair<Integer, Pair<JMSContext, JMSProducer>> jms = getProducer(connectionFactory, controller.isDebugEnabled());
     		
     		producer = jms.getRight().getRight();
     		context = jms.getRight().getLeft();
@@ -138,7 +135,7 @@ public class StatProducer extends AbstractProducer {
             	message.acknowledge();
         	}
         	
-        	if (isDebugEnabled()) {
+        	if (controller.isDebugEnabled()) {
         		try {
     				logger.info("spool: stat event spooled to " + _queueName + ":" + JsonUtil.serialize(event, false));
     			} catch (JsonProcessingException e) {

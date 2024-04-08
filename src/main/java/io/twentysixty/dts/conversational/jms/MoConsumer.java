@@ -11,6 +11,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 
 import io.quarkus.runtime.ShutdownEvent;
 import io.quarkus.runtime.StartupEvent;
+import io.twentysixty.dts.conversational.svc.Controller;
 import io.twentysixty.dts.conversational.svc.Service;
 import io.twentysixty.sa.client.jms.AbstractConsumer;
 import io.twentysixty.sa.client.jms.ConsumerInterface;
@@ -33,34 +34,33 @@ public class MoConsumer extends AbstractConsumer implements ConsumerInterface {
     ConnectionFactory _connectionFactory;
 
 
-	@ConfigProperty(name = "io.twentysixty.hologram.welcome.jms.ex.delay")
+	@ConfigProperty(name = "io.twentysixty.dts.conversational.jms.ex.delay")
 	Long _exDelay;
 
 
-	@ConfigProperty(name = "io.twentysixty.hologram.welcome.jms.mo.queue.name")
+	@ConfigProperty(name = "io.twentysixty.dts.conversational.jms.mo.queue.name")
 	String _queueName;
 
-	@ConfigProperty(name = "io.twentysixty.hologram.welcome.jms.mo.consumer.threads")
+	@ConfigProperty(name = "io.twentysixty.dts.conversational.jms.mo.consumer.threads")
 	Integer _threads;
 
-	@ConfigProperty(name = "io.twentysixty.hologram.welcome.debug")
-	Boolean _debug;
-
+	
 	private static final Logger logger = Logger.getLogger(MoConsumer.class);
 
 	@Inject MtProducer mtProducer;
 
-
+	@Inject Controller controller;
+	
 	void onStart(@Observes StartupEvent ev) {
 
 		logger.info("onStart: SaConsumer queueName: " + _queueName);
 
 		this.setExDelay(_exDelay);
-		this.setDebug(_debug);
+		this.setDebug(controller.isDebugEnabled());
 		this.setQueueName(_queueName);
 		this.setThreads(_threads);
 		this.setConnectionFactory(_connectionFactory);
-		super._onStart();
+		//super._onStart();
 
     }
 
@@ -68,10 +68,11 @@ public class MoConsumer extends AbstractConsumer implements ConsumerInterface {
 
     	logger.info("onStop: SaConsumer");
 
-    	super._onStop();
+    	//super._onStop();
 
     }
-
+    
+   
     @Override
 	public void receiveMessage(BaseMessage message) throws Exception {
 
@@ -107,7 +108,7 @@ public class MoConsumer extends AbstractConsumer implements ConsumerInterface {
 		}
 
 
-		if (_debug) {
+		if (controller.isDebugEnabled()) {
 			try {
 				logger.info("messageReceived: sent receipts:" + JsonUtil.serialize(r, false));
 			} catch (JsonProcessingException e) {
@@ -117,5 +118,61 @@ public class MoConsumer extends AbstractConsumer implements ConsumerInterface {
 
 	}
 
+
+    private Object controlerLockObj = new Object();
+    private boolean started = false;
+    private boolean stopped = true;
+    
+    public void start() {
+    	synchronized (controlerLockObj) {
+    		try {
+    			started = true;
+    			super._onStart();
+    			stopped = false;
+    		} catch (Exception e) {
+    			logger.error("start: ", e);
+    		}
+    	}
+    	
+    }
+    
+    public void stop() {
+    	synchronized (controlerLockObj) {
+    		try {
+    			stopped = true;
+    			super._onStop();
+    			started = false;
+    		} catch (Exception e) {
+    			logger.error("start: ", e);
+    		}
+    	}
+    	
+    }
+
+	public boolean isStarted() {
+		
+		
+		synchronized (controlerLockObj) {
+			try {
+				return started;
+			} catch (Exception e) {
+    			logger.error("isStarted: ", e);
+    		}
+		}
+		return false;
+	}
+
+	
+
+	public boolean isStopped() {
+		synchronized (controlerLockObj) {
+			try {
+				return stopped;
+			} catch (Exception e) {
+    			logger.error("isStarted: ", e);
+    		}
+		}
+		return false;
+	}
 
 }

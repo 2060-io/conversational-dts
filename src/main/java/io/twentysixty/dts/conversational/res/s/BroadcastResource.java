@@ -25,9 +25,7 @@ public class BroadcastResource  {
 	private static Logger logger = Logger.getLogger(BroadcastResource.class);
 
 	@Inject Service service;
-	@ConfigProperty(name = "io.twentysixty.hologram.welcome.debug")
-	Boolean debug;
-
+	
 
 
 	@GET

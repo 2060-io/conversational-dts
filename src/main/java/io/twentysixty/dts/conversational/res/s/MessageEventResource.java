@@ -8,22 +8,18 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.mobiera.ms.commons.stats.api.StatEnum;
-import com.mobiera.ms.mno.aircast.stats.AircastStatClass;
-import com.mobiera.ms.mno.aircast.stats.DidcommServiceStat;
 
 import io.twentysixty.dts.conversational.jms.MoProducer;
 import io.twentysixty.dts.conversational.jms.MtProducer;
 import io.twentysixty.dts.conversational.jms.StatProducer;
+import io.twentysixty.dts.conversational.svc.Controller;
 import io.twentysixty.sa.client.model.event.MessageReceived;
-import io.twentysixty.sa.client.model.event.MessageState;
 import io.twentysixty.sa.client.model.event.MessageStateUpdated;
 import io.twentysixty.sa.client.model.message.MessageReceiptOptions;
 import io.twentysixty.sa.client.model.message.ReceiptsMessage;
 import io.twentysixty.sa.client.res.s.MessageEventInterface;
 import io.twentysixty.sa.client.util.JsonUtil;
 import jakarta.inject.Inject;
-import jakarta.jms.JMSException;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
@@ -43,12 +39,9 @@ public class MessageEventResource implements MessageEventInterface {
 	@Inject MoProducer moProducer;
 	@Inject MtProducer mtProducer;
 
-	@ConfigProperty(name = "io.twentysixty.hologram.welcome.debug")
-	Boolean debug;
+	@Inject Controller controller;
 
-	@ConfigProperty(name = "io.twentysixty.aircast.didcomm.service.id")
-	Long didcommServiceId;
-
+	
 	@Inject StatProducer statProducer;
 
 	@Override
@@ -57,7 +50,7 @@ public class MessageEventResource implements MessageEventInterface {
 	@Produces("application/json")
 	public Response messageReceived(MessageReceived event) {
 
-		if (debug) {
+		if (controller.isDebugEnabled()) {
 			try {
 				logger.info("messageReceived: " + JsonUtil.serialize(event, false));
 			} catch (JsonProcessingException e) {
@@ -88,7 +81,7 @@ public class MessageEventResource implements MessageEventInterface {
 	@Produces("application/json")
 	public Response messageStateUpdated(MessageStateUpdated event) {
 
-		if (debug) {
+		if (controller.isDebugEnabled()) {
 			try {
 				logger.info("messageStateUpdated: " + JsonUtil.serialize(event, false));
 			} catch (JsonProcessingException e) {

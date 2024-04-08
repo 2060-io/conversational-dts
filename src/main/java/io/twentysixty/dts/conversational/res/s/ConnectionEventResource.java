@@ -5,6 +5,7 @@ import org.jboss.logging.Logger;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 
+import io.twentysixty.dts.conversational.svc.Controller;
 import io.twentysixty.dts.conversational.svc.Service;
 import io.twentysixty.sa.client.model.event.ConnectionStateUpdated;
 import io.twentysixty.sa.client.model.event.DidExchangeState;
@@ -24,16 +25,15 @@ public class ConnectionEventResource implements ConnectionEventInterface {
 	private static Logger logger = Logger.getLogger(ConnectionEventResource.class);
 
 	@Inject Service service;
-	@ConfigProperty(name = "io.twentysixty.hologram.welcome.debug")
-	Boolean debug;
-
+	
+	@Inject Controller controller;
 
 	@Override
 	@POST
 	@Path("/connection-state-updated")
 	@Produces("application/json")
 	public Response connectionStateUpdated(ConnectionStateUpdated event) {
-		if (debug) {
+		if (controller.isDebugEnabled()) {
 			try {
 				logger.info("connectionStateUpdated: " + JsonUtil.serialize(event, false));
 			} catch (JsonProcessingException e) {

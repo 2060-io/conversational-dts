@@ -8,16 +8,16 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
 import com.mobiera.ms.commons.stats.api.StatEnum;
-import com.mobiera.ms.mno.aircast.stats.AircastStatClass;
-import com.mobiera.ms.mno.aircast.stats.DidcommServiceStat;
 
 import io.quarkus.runtime.ShutdownEvent;
 import io.quarkus.runtime.StartupEvent;
+import io.twentysixty.dts.conversational.svc.Controller;
+import io.twentysixty.orchestrator.stats.ConversationalServiceStat;
+import io.twentysixty.orchestrator.stats.OrchestratorStatClass;
 import io.twentysixty.sa.client.jms.AbstractProducer;
 import io.twentysixty.sa.client.jms.ProducerInterface;
 import io.twentysixty.sa.client.model.message.BaseMessage;
 import io.twentysixty.sa.client.model.message.ContextualMenuSelect;
-import io.twentysixty.sa.client.model.message.ContextualMenuUpdate;
 import io.twentysixty.sa.client.model.message.InvitationMessage;
 import io.twentysixty.sa.client.model.message.MediaMessage;
 import io.twentysixty.sa.client.model.message.MenuSelectMessage;
@@ -37,21 +37,17 @@ public class MoProducer extends AbstractProducer implements ProducerInterface {
     ConnectionFactory _connectionFactory;
 
 
-	@ConfigProperty(name = "io.twentysixty.hologram.welcome.jms.ex.delay")
+	@ConfigProperty(name = "io.twentysixty.dts.conversational.jms.ex.delay")
 	Long _exDelay;
 
-	@ConfigProperty(name = "io.twentysixty.hologram.welcome.jms.mo.queue.name")
+	@ConfigProperty(name = "io.twentysixty.dts.conversational.jms.mo.queue.name")
 	String _queueName;
 
-	@ConfigProperty(name = "io.twentysixty.hologram.welcome.jms.mo.producer.threads")
+	@ConfigProperty(name = "io.twentysixty.dts.conversational.jms.mo.producer.threads")
 	Integer _threads;
 
-	@ConfigProperty(name = "io.twentysixty.hologram.welcome.debug")
-	Boolean _debug;
-
-	@ConfigProperty(name = "io.twentysixty.aircast.didcomm.service.id")
-	Long didcommServiceId;
-
+	@Inject Controller controller;
+	
 	@Inject StatProducer statProducer;
 
 
@@ -63,7 +59,7 @@ public class MoProducer extends AbstractProducer implements ProducerInterface {
     	logger.info("onStart: SaProducer");
 
     	this.setExDelay(_exDelay);
-		this.setDebug(_debug);
+		this.setDebug(controller.isDebugEnabled());
 		this.setQueueName(_queueName);
 		this.setThreads(_threads);
 		this.setConnectionFactory(_connectionFactory);
@@ -80,64 +76,64 @@ public class MoProducer extends AbstractProducer implements ProducerInterface {
     public void sendMessage(BaseMessage message) throws Exception {
     	
     	ArrayList<StatEnum> lenum = new ArrayList<StatEnum>(1);
-    	lenum.add(DidcommServiceStat.RECEIVED_MSG);
+    	lenum.add(ConversationalServiceStat.RECEIVED_MSG);
     	
     	try {
     		this.spool(message, 0);
     	} catch (Exception e) {
-    		lenum.add(DidcommServiceStat.RECEIVED_MSG_ERROR);
-    		statProducer.spool(AircastStatClass.DIDCOMM_SERVICE.toString(), didcommServiceId, lenum, Instant.now(), 1);
+    		lenum.add(ConversationalServiceStat.RECEIVED_MSG_ERROR);
+    		statProducer.spool(OrchestratorStatClass.CONVERSATIONAL_SERVICE.toString(), Controller.getDtsConfig().getId(), lenum, Instant.now(), 1);
     		throw e;
     	}
     	
     	
-    	lenum.add(DidcommServiceStat.RECEIVED_MSG_SPOOLED);
+    	lenum.add(ConversationalServiceStat.RECEIVED_MSG_SPOOLED);
     	
 	
 	
     	if (message instanceof TextMessage) {
-    		lenum.add(DidcommServiceStat.RECEIVED_MSG_TEXT);
+    		lenum.add(ConversationalServiceStat.RECEIVED_MSG_TEXT);
     	} else if (message instanceof MenuSelectMessage) {
-    		lenum.add(DidcommServiceStat.RECEIVED_MSG_MENU_SELECT_ANSWER);
+    		lenum.add(ConversationalServiceStat.RECEIVED_MSG_MENU_SELECT_ANSWER);
     	} else if (message instanceof MediaMessage) {
-    		lenum.add(DidcommServiceStat.RECEIVED_MSG_MEDIA);
+    		lenum.add(ConversationalServiceStat.RECEIVED_MSG_MEDIA);
     	} else if (message instanceof InvitationMessage) {
-    		lenum.add(DidcommServiceStat.RECEIVED_MSG_INVITATION);
+    		lenum.add(ConversationalServiceStat.RECEIVED_MSG_INVITATION);
     	} else if (message instanceof ContextualMenuSelect) {
-    		lenum.add(DidcommServiceStat.RECEIVED_MSG_CTX_MENU_SELECTION);
+    		lenum.add(ConversationalServiceStat.RECEIVED_MSG_CTX_MENU_SELECTION);
     	} else if (message instanceof ReceiptsMessage) {
     		ReceiptsMessage rm = (ReceiptsMessage) message;
     		for (MessageReceiptOptions o: rm.getReceipts()) {
     			switch (o.getState()) {
     			case RECEIVED: {
-    				lenum.add(DidcommServiceStat.SENT_MSG_RECEIVED);
+    				lenum.add(ConversationalServiceStat.SENT_MSG_RECEIVED);
     				break;
     			}
     			case CREATED: {
-    				lenum.add(DidcommServiceStat.SENT_MSG_CREATED);
+    				lenum.add(ConversationalServiceStat.SENT_MSG_CREATED);
     				break;
     			}
     			case SUBMITTED: {
-    				lenum.add(DidcommServiceStat.SENT_MSG_SUBMITTED);
+    				lenum.add(ConversationalServiceStat.SENT_MSG_SUBMITTED);
     				break;
     			}
     			case VIEWED: {
-    				lenum.add(DidcommServiceStat.SENT_MSG_VIEWED);
+    				lenum.add(ConversationalServiceStat.SENT_MSG_VIEWED);
     				break;
     			}
     			case DELETED: {
-    				lenum.add(DidcommServiceStat.SENT_MSG_DELETED);
+    				lenum.add(ConversationalServiceStat.SENT_MSG_DELETED);
     				break;
     			}
     			}
     		}
     	} else {
-    		lenum.add(DidcommServiceStat.SENT_MSG_OTHERS);
+    		lenum.add(ConversationalServiceStat.SENT_MSG_OTHERS);
     	}
     	
     	
     	
-    	statProducer.spool(AircastStatClass.DIDCOMM_SERVICE.toString(), didcommServiceId, lenum, Instant.now(), 1);
+    	statProducer.spool(OrchestratorStatClass.CONVERSATIONAL_SERVICE.toString(), Controller.getDtsConfig().getId(), lenum, Instant.now(), 1);
 		
 		
     }

@@ -3,13 +3,13 @@ package io.twentysixty.dts.conversational.jms;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.graalvm.collections.Pair;
+import org.jboss.logging.Logger;
+
 import jakarta.jms.ConnectionFactory;
 import jakarta.jms.JMSContext;
 import jakarta.jms.JMSProducer;
 import jakarta.jms.Session;
-
-import org.graalvm.collections.Pair;
-import org.jboss.logging.Logger;
 
 
 public abstract class AbstractProducer {

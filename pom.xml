@@ -48,18 +48,18 @@
   <dependency> 
  <groupId>io.2060</groupId>
   <artifactId>service-agent-java-client</artifactId>
-  <version>2.0.2</version>
+  <version>2.0.4</version>
   </dependency>
        <dependency> 
  <groupId>com.mobiera.commons</groupId>
   <artifactId>stats-api</artifactId>
   <version>2.6</version>
   </dependency>
-  <dependency> 
+ <!-- <dependency> 
  <groupId>com.mobiera.libs</groupId>
   <artifactId>aircast-api-stats</artifactId>
   <version>1.1</version>
-  </dependency>
+  </dependency>-->
   <dependency> 
  <groupId>io.2060.orchestrator</groupId>
   <artifactId>orchestrator-api</artifactId>
@@ -79,9 +79,14 @@
       <artifactId>quarkus-resteasy</artifactId>
     </dependency>
     <dependency>
+      <groupId>org.graalvm.sdk</groupId>
+      <artifactId>graal-sdk</artifactId>
+    </dependency>
+    <dependency>
     <groupId>org.jboss.resteasy</groupId>
     <artifactId>resteasy-multipart-provider</artifactId>
 </dependency>
+
     <dependency>
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-resteasy-jackson</artifactId>

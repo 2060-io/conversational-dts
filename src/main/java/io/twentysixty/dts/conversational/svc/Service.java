@@ -17,14 +17,15 @@ import org.jgroups.util.Base64;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.mobiera.ms.commons.stats.api.StatEnum;
-import com.mobiera.ms.mno.aircast.stats.AircastStatClass;
-import com.mobiera.ms.mno.aircast.stats.DidcommServiceStat;
+
 
 import io.twentysixty.dts.conversational.ex.NonexistentConnectionException;
 import io.twentysixty.dts.conversational.jms.MtProducer;
 import io.twentysixty.dts.conversational.jms.StatProducer;
 import io.twentysixty.dts.conversational.model.Session;
 import io.twentysixty.dts.conversational.res.c.MediaResource;
+import io.twentysixty.orchestrator.stats.ConversationalServiceStat;
+import io.twentysixty.orchestrator.stats.OrchestratorStatClass;
 import io.twentysixty.sa.client.model.credential.CredentialType;
 import io.twentysixty.sa.client.model.message.BaseMessage;
 import io.twentysixty.sa.client.model.message.ContextualMenuItem;
@@ -60,73 +61,73 @@ public class Service {
 
 	@Inject MtProducer mtProducer;
 
+	
+	@Inject Controller controller;
+	
 	@RestClient
 	@Inject CredentialTypeResource credentialTypeResource;
 
-	@ConfigProperty(name = "io.twentysixty.hologram.welcome.debug")
-	Boolean debug;
-
-
-	@ConfigProperty(name = "io.twentysixty.hologram.welcome.credential_issuer")
+	
+	@ConfigProperty(name = "io.twentysixty.dts.conversational.credential_issuer")
 	String credentialIssuer;
 
-	@ConfigProperty(name = "io.twentysixty.hologram.welcome.credential_issuer.avatar")
+	@ConfigProperty(name = "io.twentysixty.dts.conversational.credential_issuer.avatar")
 	String invitationImageUrl;
 
-	@ConfigProperty(name = "io.twentysixty.hologram.welcome.credential_issuer.label")
+	@ConfigProperty(name = "io.twentysixty.dts.conversational.credential_issuer.label")
 	String invitationLabel;
 
 
 
-	@ConfigProperty(name = "io.twentysixty.hologram.welcome.id_credential_def")
+	@ConfigProperty(name = "io.twentysixty.dts.conversational.id_credential_def")
 	String credDef;
 
-	@ConfigProperty(name = "io.twentysixty.hologram.welcome.messages.welcome")
+	@ConfigProperty(name = "io.twentysixty.dts.conversational.messages.welcome")
 	String WELCOME;
 
-	@ConfigProperty(name = "io.twentysixty.hologram.welcome.messages.welcome2")
+	@ConfigProperty(name = "io.twentysixty.dts.conversational.messages.welcome2")
 	Optional<String> WELCOME2;
 
-	@ConfigProperty(name = "io.twentysixty.hologram.welcome.messages.welcome3")
+	@ConfigProperty(name = "io.twentysixty.dts.conversational.messages.welcome3")
 	Optional<String> WELCOME3;
 
-	@ConfigProperty(name = "io.twentysixty.hologram.welcome.messages.auth_success")
+	@ConfigProperty(name = "io.twentysixty.dts.conversational.messages.auth_success")
 	Optional<String> AUTH_SUCCESS;
 
 
-	@ConfigProperty(name = "io.twentysixty.hologram.welcome.messages.nocred")
+	@ConfigProperty(name = "io.twentysixty.dts.conversational.messages.nocred")
 	String NO_CRED_MSG;
 
-	@ConfigProperty(name = "io.twentysixty.hologram.welcome.request.citizenid")
+	@ConfigProperty(name = "io.twentysixty.dts.conversational.request.citizenid")
 	Boolean requestCitizenId;
 
 
-	@ConfigProperty(name = "io.twentysixty.hologram.welcome.request.firstname")
+	@ConfigProperty(name = "io.twentysixty.dts.conversational.request.firstname")
 	Boolean requestFirstname;
 
-	@ConfigProperty(name = "io.twentysixty.hologram.welcome.request.lastname")
+	@ConfigProperty(name = "io.twentysixty.dts.conversational.request.lastname")
 	Boolean requestLastname;
 
-	@ConfigProperty(name = "io.twentysixty.hologram.welcome.request.photo")
+	@ConfigProperty(name = "io.twentysixty.dts.conversational.request.photo")
 	Boolean requestPhoto;
 
-	@ConfigProperty(name = "io.twentysixty.hologram.welcome.request.avatarname")
+	@ConfigProperty(name = "io.twentysixty.dts.conversational.request.avatarname")
 	Boolean requestAvatarname;
 
 
-	@ConfigProperty(name = "io.twentysixty.hologram.welcome.language")
+	@ConfigProperty(name = "io.twentysixty.dts.conversational.language")
 	Optional<String> language;
 
-	@ConfigProperty(name = "io.twentysixty.hologram.welcome.vision.face.verification.url")
+	@ConfigProperty(name = "io.twentysixty.dts.conversational.vision.face.verification.url")
 	String faceVerificationUrl;
 
-	@ConfigProperty(name = "io.twentysixty.hologram.welcome.vision.redirdomain")
+	@ConfigProperty(name = "io.twentysixty.dts.conversational.vision.redirdomain")
 	Optional<String> redirDomain;
 
-	@ConfigProperty(name = "io.twentysixty.hologram.welcome.vision.redirdomain.q")
+	@ConfigProperty(name = "io.twentysixty.dts.conversational.vision.redirdomain.q")
 	Optional<String> qRedirDomain;
 
-	@ConfigProperty(name = "io.twentysixty.hologram.welcome.vision.redirdomain.d")
+	@ConfigProperty(name = "io.twentysixty.dts.conversational.vision.redirdomain.d")
 	Optional<String> dRedirDomain;
 
 	private static String CMD_ROOT_MENU_AUTHENTICATE = "/auth";
@@ -141,28 +142,25 @@ public class Service {
 
 
 
-	@ConfigProperty(name = "io.twentysixty.hologram.welcome.bcast.interval.days")
+	@ConfigProperty(name = "io.twentysixty.dts.conversational.bcast.interval.days")
 	Integer bcastIntervalDays;
 
 
 
-	@ConfigProperty(name = "io.twentysixty.hologram.welcome.messages.root.menu.title")
+	@ConfigProperty(name = "io.twentysixty.dts.conversational.messages.root.menu.title")
 	String ROOT_MENU_TITLE;
 
 
-	@ConfigProperty(name = "io.twentysixty.hologram.welcome.messages.root.menu.option1")
+	@ConfigProperty(name = "io.twentysixty.dts.conversational.messages.root.menu.option1")
 	String ROOT_MENU_OPTION1;
 
-	@ConfigProperty(name = "io.twentysixty.hologram.welcome.messages.root.menu.no_cred")
+	@ConfigProperty(name = "io.twentysixty.dts.conversational.messages.root.menu.no_cred")
 	Optional<String> ROOT_MENU_NO_CRED;
 
 
 
-	@ConfigProperty(name = "io.twentysixty.hologram.welcome.messages.option1")
+	@ConfigProperty(name = "io.twentysixty.dts.conversational.messages.option1")
 	String OPTION1_MSG;
-
-	@ConfigProperty(name = "io.twentysixty.aircast.didcomm.service.id")
-	Long didcommServiceId;
 
 	
 
@@ -197,8 +195,8 @@ public class Service {
 		//mtProducer.sendMessage(this.getIdentityCredentialRequest(connectionId, null));
 
 		ArrayList<StatEnum> lenum = new ArrayList<StatEnum>(1);
-		lenum.add(DidcommServiceStat.ESTABLISHED_CONNECTION);
-		statProducer.spool(AircastStatClass.DIDCOMM_SERVICE.toString(), didcommServiceId, lenum, Instant.now(), 1);
+		lenum.add(ConversationalServiceStat.ESTABLISHED_CONNECTION);
+		statProducer.spool(OrchestratorStatClass.CONVERSATIONAL_SERVICE.toString(), Controller.getDtsConfig().getId(), lenum, Instant.now(), 1);
 		
 
 	}
@@ -577,7 +575,7 @@ public class Service {
 
 
 
-		if (debug) {
+		if (controller.isDebugEnabled()) {
 			try {
 				logger.info("getRootMenu: " + JsonUtil.serialize(menu, false));
 			} catch (JsonProcessingException e) {
@@ -619,7 +617,7 @@ public class Service {
 		q.setParameter("minNextBcTs", Instant.now().minusSeconds(86400l * 365));
 
 		List<List<Object>>res = q.getResultList();
-		if (debug) {
+		if (controller.isDebugEnabled()) {
 			if (res.size() >0) {
 				logger.info("getForDiscovery: " + query + " " + res);
 			} else {
