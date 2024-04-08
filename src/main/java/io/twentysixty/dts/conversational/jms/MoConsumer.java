@@ -1,0 +1,121 @@
+package io.twentysixty.dts.conversational.jms;
+
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.jboss.logging.Logger;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+
+import io.quarkus.runtime.ShutdownEvent;
+import io.quarkus.runtime.StartupEvent;
+import io.twentysixty.dts.conversational.svc.Service;
+import io.twentysixty.sa.client.jms.AbstractConsumer;
+import io.twentysixty.sa.client.jms.ConsumerInterface;
+import io.twentysixty.sa.client.model.event.MessageState;
+import io.twentysixty.sa.client.model.message.BaseMessage;
+import io.twentysixty.sa.client.model.message.MessageReceiptOptions;
+import io.twentysixty.sa.client.model.message.ReceiptsMessage;
+import io.twentysixty.sa.client.util.JsonUtil;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Observes;
+import jakarta.inject.Inject;
+import jakarta.jms.ConnectionFactory;
+
+@ApplicationScoped
+public class MoConsumer extends AbstractConsumer implements ConsumerInterface {
+
+	@Inject Service gaiaService;
+
+	@Inject
+    ConnectionFactory _connectionFactory;
+
+
+	@ConfigProperty(name = "io.twentysixty.hologram.welcome.jms.ex.delay")
+	Long _exDelay;
+
+
+	@ConfigProperty(name = "io.twentysixty.hologram.welcome.jms.mo.queue.name")
+	String _queueName;
+
+	@ConfigProperty(name = "io.twentysixty.hologram.welcome.jms.mo.consumer.threads")
+	Integer _threads;
+
+	@ConfigProperty(name = "io.twentysixty.hologram.welcome.debug")
+	Boolean _debug;
+
+	private static final Logger logger = Logger.getLogger(MoConsumer.class);
+
+	@Inject MtProducer mtProducer;
+
+
+	void onStart(@Observes StartupEvent ev) {
+
+		logger.info("onStart: SaConsumer queueName: " + _queueName);
+
+		this.setExDelay(_exDelay);
+		this.setDebug(_debug);
+		this.setQueueName(_queueName);
+		this.setThreads(_threads);
+		this.setConnectionFactory(_connectionFactory);
+		super._onStart();
+
+    }
+
+    void onStop(@Observes ShutdownEvent ev) {
+
+    	logger.info("onStop: SaConsumer");
+
+    	super._onStop();
+
+    }
+
+    @Override
+	public void receiveMessage(BaseMessage message) throws Exception {
+
+		gaiaService.userInput(message);
+		
+		List<MessageReceiptOptions> receipts = new ArrayList<>();
+
+		/*MessageReceiptOptions received = new MessageReceiptOptions();
+		received.setMessageId(event.getMessage().getId());
+		received.setTimestamp(Instant.now());
+		received.setState(MessageState.RECEIVED);
+		receipts.add(received);
+		*/
+
+		MessageReceiptOptions viewed = new MessageReceiptOptions();
+		viewed.setMessageId(message.getId());
+		viewed.setTimestamp(Instant.now());
+		viewed.setState(MessageState.VIEWED);
+		receipts.add(viewed);
+
+		ReceiptsMessage r = new ReceiptsMessage();
+		r.setConnectionId(message.getConnectionId());
+		r.setReceipts(receipts);
+
+		
+		
+		try {
+			mtProducer.sendMessage(r);
+			
+			
+		} catch (Exception e) {
+			logger.error("", e);
+		}
+
+
+		if (_debug) {
+			try {
+				logger.info("messageReceived: sent receipts:" + JsonUtil.serialize(r, false));
+			} catch (JsonProcessingException e) {
+				logger.error("", e);
+			}
+		}
+
+	}
+
+
+}
