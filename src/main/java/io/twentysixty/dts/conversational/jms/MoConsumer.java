@@ -70,6 +70,10 @@ public class MoConsumer extends AbstractConsumer implements ConsumerInterface {
 
     	//super._onStop();
 
+    	if (!this.isStopped()) {
+    		super._onStop();
+    	}
+    	
     }
     
    

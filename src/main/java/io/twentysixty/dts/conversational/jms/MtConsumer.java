@@ -61,8 +61,10 @@ public class MtConsumer extends AbstractConsumer implements ConsumerInterface {
 
     	logger.info("onStop: BeConsumer");
 
-
-    	//super._onStop();
+    	if (!this.isStopped()) {
+    		super._onStop();
+    	}
+    	
 
     }
 

@@ -1,6 +1,7 @@
 package io.twentysixty.dts.conversational.svc;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -14,6 +15,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import io.quarkus.runtime.ShutdownEvent;
 import io.quarkus.runtime.StartupEvent;
 import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.infrastructure.Infrastructure;
 import io.twentysixty.dts.conversational.jms.MoConsumer;
 import io.twentysixty.dts.conversational.jms.MtConsumer;
 import io.twentysixty.orchestrator.api.EntityStateChangeEvent;
@@ -27,6 +29,7 @@ import io.twentysixty.orchestrator.res.c.RegisterResource;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
+import jakarta.ws.rs.core.GenericType;
 import jakarta.ws.rs.core.Response;
 
 @Singleton
@@ -109,8 +112,6 @@ public class Controller {
 			boolean startStop = false;
 			
 			try {
-			
-				
 				
 				if (orchestrator) {
 					
@@ -118,7 +119,7 @@ public class Controller {
 						Response response = registerResource.register(App.CONVERSATIONAL_SERVICE, entityId, instanceId);
 						
 						if (response.getStatus()<300) {
-							RegisterResponse rr = (RegisterResponse) response.getEntity();
+							RegisterResponse rr = (RegisterResponse) response.readEntity(RegisterResponse.class);
 							registryId = rr.getRegistryId();
 							expireRegisterTs = rr.getExpireTs();
 						}
@@ -126,17 +127,19 @@ public class Controller {
 						logger.error("registerTask: cannot register: ", e);
 					}
 					
-					if (dtsConfig == null) {
+					if ((dtsConfig == null) && (expireRegisterTs != null)) {
 						// null config, getting
 						
 						try {
 							Response getMyServiceResponse = conversationalServiceResource.get(entityId);
+							
 							if (getMyServiceResponse.getStatus()<300) {
-								dtsConfig = (ConversationalServiceVO) getMyServiceResponse.getEntity();
+								dtsConfig = (ConversationalServiceVO) getMyServiceResponse.readEntity(ConversationalServiceVO.class);
 								startStop = true;
 							}
 							
 						} catch (Exception e) {
+							expireRegisterTs = null;
 							logger.error("registerTask: unable to get myService config: ", e);
 						}
 						
@@ -229,7 +232,8 @@ public class Controller {
 							try {
 								Response getMyServiceResponse = conversationalServiceResource.get(entityId);
 								if (getMyServiceResponse.getStatus()<300) {
-									dtsConfig = (ConversationalServiceVO) getMyServiceResponse.getEntity();
+									
+									dtsConfig = (ConversationalServiceVO) getMyServiceResponse.readEntity(ConversationalServiceVO.class);
 									startStop = true;
 								}
 								

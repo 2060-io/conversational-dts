@@ -78,10 +78,7 @@
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-resteasy</artifactId>
     </dependency>
-    <dependency>
-      <groupId>org.graalvm.sdk</groupId>
-      <artifactId>graal-sdk</artifactId>
-    </dependency>
+    
     <dependency>
     <groupId>org.jboss.resteasy</groupId>
     <artifactId>resteasy-multipart-provider</artifactId>
