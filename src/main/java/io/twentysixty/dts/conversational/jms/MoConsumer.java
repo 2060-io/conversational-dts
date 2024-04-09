@@ -159,26 +159,17 @@ public class MoConsumer extends AbstractConsumer<BaseMessage> implements Consume
 		
 		
 		synchronized (controlerLockObj) {
-			try {
-				return started;
-			} catch (Exception e) {
-    			logger.error("isStarted: ", e);
-    		}
+			return started;
 		}
-		return false;
 	}
 
 	
 
 	public boolean isStopped() {
 		synchronized (controlerLockObj) {
-			try {
-				return stopped;
-			} catch (Exception e) {
-    			logger.error("isStarted: ", e);
-    		}
+			return stopped;
 		}
-		return false;
+		
 	}
 
 }
