@@ -24,7 +24,7 @@ import io.twentysixty.dts.conversational.jms.MtProducer;
 import io.twentysixty.dts.conversational.jms.StatProducer;
 import io.twentysixty.dts.conversational.model.Session;
 import io.twentysixty.dts.conversational.res.c.MediaResource;
-import io.twentysixty.orchestrator.stats.ConversationalServiceStat;
+import io.twentysixty.orchestrator.stats.DtsStat;
 import io.twentysixty.orchestrator.stats.OrchestratorStatClass;
 import io.twentysixty.sa.client.model.credential.CredentialType;
 import io.twentysixty.sa.client.model.message.BaseMessage;
@@ -195,8 +195,8 @@ public class Service {
 		//mtProducer.sendMessage(this.getIdentityCredentialRequest(connectionId, null));
 
 		ArrayList<StatEnum> lenum = new ArrayList<StatEnum>(1);
-		lenum.add(ConversationalServiceStat.ESTABLISHED_CONNECTION);
-		statProducer.spool(OrchestratorStatClass.CONVERSATIONAL_SERVICE.toString(), Controller.getDtsConfig().getId(), lenum, Instant.now(), 1);
+		lenum.add(DtsStat.ESTABLISHED_CONNECTION);
+		statProducer.spool(OrchestratorStatClass.DTS.toString(), Controller.getDtsConfig().getId(), lenum, Instant.now(), 1);
 		
 
 	}

@@ -24,8 +24,8 @@ import io.twentysixty.orchestrator.api.RegisterResponse;
 import io.twentysixty.orchestrator.api.enums.App;
 import io.twentysixty.orchestrator.api.enums.EntityType;
 import io.twentysixty.orchestrator.api.util.JsonUtil;
-import io.twentysixty.orchestrator.api.vo.ConversationalServiceVO;
-import io.twentysixty.orchestrator.res.c.ConversationalServiceResource;
+import io.twentysixty.orchestrator.api.vo.DtsVO;
+import io.twentysixty.orchestrator.res.c.DtsResource;
 import io.twentysixty.orchestrator.res.c.RegisterResource;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
@@ -47,7 +47,7 @@ public class Controller {
 	
 	private static Instant expireRegisterTs = null;
 	
-	private static ConversationalServiceVO dtsConfig = null;
+	private static DtsVO dtsConfig = null;
 	
 	@ConfigProperty(name = "io.twentysixty.orchestrator.register.min.wait")
 	Long minimumRegisterWaitTimeMs;
@@ -72,7 +72,7 @@ public class Controller {
 	
 	@RestClient
 	@Inject
-	ConversationalServiceResource conversationalServiceResource;
+	DtsResource conversationalServiceResource;
 	
 	@Inject
 	MtConsumer mtConsumer;
@@ -127,7 +127,7 @@ public class Controller {
 				if (orchestrator) {
 					
 					try {
-						Response response = registerResource.register(App.CONVERSATIONAL_SERVICE, entityId, instanceId);
+						Response response = registerResource.register(App.DTS, entityId, instanceId);
 						RegisterResponse rr = (RegisterResponse) response.readEntity(RegisterResponse.class);
 						registryId = rr.getRegistryId();
 						expireRegisterTs = rr.getExpireTs();
@@ -157,7 +157,7 @@ public class Controller {
 							Response getMyServiceResponse = conversationalServiceResource.get(entityId);
 							
 							if (getMyServiceResponse.getStatus()<300) {
-								dtsConfig = (ConversationalServiceVO) getMyServiceResponse.readEntity(ConversationalServiceVO.class);
+								dtsConfig = (DtsVO) getMyServiceResponse.readEntity(DtsVO.class);
 								startStop = true;
 								
 								logger.info("registerTask: loaded config OK, DTS: " + dtsConfig.getName() + " " + dtsConfig.getId() + " state: " + dtsConfig.getState() + " debug: " + dtsConfig.getDebug());
@@ -231,7 +231,7 @@ public class Controller {
 		return registryId;
 	}
 
-	public static ConversationalServiceVO getDtsConfig() {
+	public static DtsVO getDtsConfig() {
 		return dtsConfig;
 	}
 	
@@ -258,20 +258,20 @@ public class Controller {
 		
 		boolean startStop = false;
 		
-		if (event.getApp().equals(App.CONVERSATIONAL_SERVICE)) {
+		if (event.getApp().equals(App.DTS)) {
 			if (event.getAppEntityId().equals(getDtsConfig().getId())) {
 				if (event.getAppInstanceId().equals(instanceId)) {
 					// really for me
 					
 					if (event.getChangedEntityId().equals(getDtsConfig().getId())) {
-						if (event.getChangedEntityType().equals(EntityType.CONVERSATIONAL_SERVICE)) {
+						if (event.getChangedEntityType().equals(EntityType.DTS)) {
 							// my entity
 							
 							try {
 								Response getMyServiceResponse = conversationalServiceResource.get(entityId);
 								if (getMyServiceResponse.getStatus()<300) {
 									
-									dtsConfig = (ConversationalServiceVO) getMyServiceResponse.readEntity(ConversationalServiceVO.class);
+									dtsConfig = (DtsVO) getMyServiceResponse.readEntity(DtsVO.class);
 									startStop = true;
 									logger.info("registerTask: loaded config OK, DTS: " + dtsConfig.getName() + " " + dtsConfig.getId() + " state: " + dtsConfig.getState() + " debug: " + dtsConfig.getDebug());
 

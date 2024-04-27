@@ -12,7 +12,7 @@ import com.mobiera.ms.commons.stats.api.StatEnum;
 import io.quarkus.runtime.ShutdownEvent;
 import io.quarkus.runtime.StartupEvent;
 import io.twentysixty.dts.conversational.svc.Controller;
-import io.twentysixty.orchestrator.stats.ConversationalServiceStat;
+import io.twentysixty.orchestrator.stats.DtsStat;
 import io.twentysixty.orchestrator.stats.OrchestratorStatClass;
 import io.twentysixty.sa.client.jms.AbstractProducer;
 import io.twentysixty.sa.client.jms.ProducerInterface;
@@ -76,64 +76,64 @@ public class MoProducer extends AbstractProducer implements ProducerInterface {
     public void sendMessage(BaseMessage message) throws Exception {
     	
     	ArrayList<StatEnum> lenum = new ArrayList<StatEnum>(1);
-    	lenum.add(ConversationalServiceStat.RECEIVED_MSG);
+    	lenum.add(DtsStat.RECEIVED_MSG);
     	
     	try {
     		this.spool(message, 0);
     	} catch (Exception e) {
-    		lenum.add(ConversationalServiceStat.RECEIVED_MSG_ERROR);
-    		statProducer.spool(OrchestratorStatClass.CONVERSATIONAL_SERVICE.toString(), Controller.getDtsConfig().getId(), lenum, Instant.now(), 1);
+    		lenum.add(DtsStat.RECEIVED_MSG_ERROR);
+    		statProducer.spool(OrchestratorStatClass.DTS.toString(), Controller.getDtsConfig().getId(), lenum, Instant.now(), 1);
     		throw e;
     	}
     	
     	
-    	lenum.add(ConversationalServiceStat.RECEIVED_MSG_SPOOLED);
+    	lenum.add(DtsStat.RECEIVED_MSG_SPOOLED);
     	
 	
 	
     	if (message instanceof TextMessage) {
-    		lenum.add(ConversationalServiceStat.RECEIVED_MSG_TEXT);
+    		lenum.add(DtsStat.RECEIVED_MSG_TEXT);
     	} else if (message instanceof MenuSelectMessage) {
-    		lenum.add(ConversationalServiceStat.RECEIVED_MSG_MENU_SELECT_ANSWER);
+    		lenum.add(DtsStat.RECEIVED_MSG_MENU_SELECT_ANSWER);
     	} else if (message instanceof MediaMessage) {
-    		lenum.add(ConversationalServiceStat.RECEIVED_MSG_MEDIA);
+    		lenum.add(DtsStat.RECEIVED_MSG_MEDIA);
     	} else if (message instanceof InvitationMessage) {
-    		lenum.add(ConversationalServiceStat.RECEIVED_MSG_INVITATION);
+    		lenum.add(DtsStat.RECEIVED_MSG_INVITATION);
     	} else if (message instanceof ContextualMenuSelect) {
-    		lenum.add(ConversationalServiceStat.RECEIVED_MSG_CTX_MENU_SELECTION);
+    		lenum.add(DtsStat.RECEIVED_MSG_CTX_MENU_SELECTION);
     	} else if (message instanceof ReceiptsMessage) {
     		ReceiptsMessage rm = (ReceiptsMessage) message;
     		for (MessageReceiptOptions o: rm.getReceipts()) {
     			switch (o.getState()) {
     			case RECEIVED: {
-    				lenum.add(ConversationalServiceStat.SENT_MSG_RECEIVED);
+    				lenum.add(DtsStat.SENT_MSG_RECEIVED);
     				break;
     			}
     			case CREATED: {
-    				lenum.add(ConversationalServiceStat.SENT_MSG_CREATED);
+    				lenum.add(DtsStat.SENT_MSG_CREATED);
     				break;
     			}
     			case SUBMITTED: {
-    				lenum.add(ConversationalServiceStat.SENT_MSG_SUBMITTED);
+    				lenum.add(DtsStat.SENT_MSG_SUBMITTED);
     				break;
     			}
     			case VIEWED: {
-    				lenum.add(ConversationalServiceStat.SENT_MSG_VIEWED);
+    				lenum.add(DtsStat.SENT_MSG_VIEWED);
     				break;
     			}
     			case DELETED: {
-    				lenum.add(ConversationalServiceStat.SENT_MSG_DELETED);
+    				lenum.add(DtsStat.SENT_MSG_DELETED);
     				break;
     			}
     			}
     		}
     	} else {
-    		lenum.add(ConversationalServiceStat.SENT_MSG_OTHERS);
+    		lenum.add(DtsStat.SENT_MSG_OTHERS);
     	}
     	
     	
     	
-    	statProducer.spool(OrchestratorStatClass.CONVERSATIONAL_SERVICE.toString(), Controller.getDtsConfig().getId(), lenum, Instant.now(), 1);
+    	statProducer.spool(OrchestratorStatClass.DTS.toString(), Controller.getDtsConfig().getId(), lenum, Instant.now(), 1);
 		
 		
     }
