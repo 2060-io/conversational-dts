@@ -1,0 +1,59 @@
+version: '3.3'
+
+services:
+
+#  artemis:
+#    image: joylife/apache-artemis:2.20.0
+#    ports:
+#      - "8161:8161"
+#      - "61616:61616"
+#      - "5672:5672"
+#    restart: unless-stopped
+#    environment:
+#      - ARTEMIS_USER=quarkus
+#      - ARTEMIS_PASSWORD=Quar2060enbPi26
+#    volumes:
+#      - /tmp/artemis/artemis-instance:/var/lib/artemis-instance
+#       - ./artemis/etc-override:/var/lib/artemis-instance/etc-override
+#    networks:
+#       - chatbot
+#
+  service-agent:
+    
+    image: io2060/2060-service-agent:dev
+
+    networks:
+      - chatbot
+    ports:
+      - 2603:3001
+      - 2604:3000
+    environment:
+      - AGENT_PUBLIC_DID=did:web:p2603.ovpndev.2060.io
+      - AGENT_ENDPOINT=wss://p2603.ovpndev.2060.io
+      - ANONCREDS_SERVICE_BASE_URL=https://p2603.ovpndev.2060.io
+      - AGENT_INVITATION_IMAGE_URL=https://p2602.ovpndev.2060.io/avatar.png
+      - AGENT_NAME=Welcome
+      - USE_CORS=true
+      - EVENTS_BASE_URL=https://p2602.ovpndev.2060.io
+    volumes:
+       - ~/conversational-dts/afj:/root/.afj
+  
+  postgres:
+    image: postgres:15.2
+    networks:
+      - chatbot
+    ports:
+      - 5433:5432
+    environment:
+      - POSTGRES_PASSWORD=dts
+      - POSTGRES_USER=dts
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    volumes:
+       - ~/conversational-dts/postgresql:/var/lib/postgresql/data
+
+networks:
+  chatbot:
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.29.0.0/27

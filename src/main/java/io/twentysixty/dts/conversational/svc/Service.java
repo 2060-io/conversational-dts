@@ -23,7 +23,6 @@ import io.twentysixty.dts.conversational.ex.NonexistentConnectionException;
 import io.twentysixty.dts.conversational.jms.MtProducer;
 import io.twentysixty.dts.conversational.jms.StatProducer;
 import io.twentysixty.dts.conversational.model.Session;
-import io.twentysixty.dts.conversational.res.c.MediaResource;
 import io.twentysixty.orchestrator.stats.DtsStat;
 import io.twentysixty.orchestrator.stats.OrchestratorStatClass;
 import io.twentysixty.sa.client.model.credential.CredentialType;
@@ -55,9 +54,7 @@ public class Service {
 
 	@Inject EntityManager em;
 
-	@RestClient
-	@Inject MediaResource mediaResource;
-
+	
 
 	@Inject MtProducer mtProducer;
 
@@ -95,7 +92,6 @@ public class Service {
 		mtProducer.sendMessage(TextMessage.build(connectionId,threadId , this.getMessage("WELCOME")));
 		mtProducer.sendMessage(this.getRootMenu(connectionId, session));
 
-		
 		ArrayList<StatEnum> lenum = new ArrayList<StatEnum>(1);
 		lenum.add(DtsStat.ESTABLISHED_CONNECTION);
 		statProducer.spool(OrchestratorStatClass.DTS.toString(), Controller.getDtsConfig().getId(), lenum, Instant.now(), 1);
@@ -198,9 +194,6 @@ public class Service {
 		return em.merge(session);
 		
 	}
-
-
-
 
 
 

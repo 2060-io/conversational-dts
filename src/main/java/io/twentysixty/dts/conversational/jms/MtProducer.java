@@ -76,71 +76,79 @@ public class MtProducer extends AbstractProducer {
 
     @Override
     public void sendMessage(BaseMessage message) throws Exception {
-    	if(controller.isDebugEnabled()) {
-    		logger.info("sendMessage: " + JsonUtil.serialize(message, false));
-    	}
-    	ArrayList<StatEnum> lenum = new ArrayList<StatEnum>(1);
-    	lenum.add(DtsStat.SENT_MSG);
-    	
-    	try {
-    		this.spool(message, 0);
-    	} catch (Exception e) {
-    		lenum.add(DtsStat.SENT_MSG_ERROR);
-    		statProducer.spool(OrchestratorStatClass.DTS.toString(), Controller.getDtsConfig().getId(), lenum, Instant.now(), 1);
-    		throw e;
-    	}
     	
     	
-    	lenum.add(DtsStat.SENT_MSG_SPOOLED);
+    	if (Controller.getDtsConfig() != null) {
+    		if(controller.isDebugEnabled()) {
+        		logger.info("sendMessage: " + JsonUtil.serialize(message, false));
+        	}
+        	ArrayList<StatEnum> lenum = new ArrayList<StatEnum>(1);
+        	lenum.add(DtsStat.SENT_MSG);
+        	
+        	try {
+        		this.spool(message, 0);
+        	} catch (Exception e) {
+        		lenum.add(DtsStat.SENT_MSG_ERROR);
+        		statProducer.spool(OrchestratorStatClass.DTS.toString(), Controller.getDtsConfig().getId(), lenum, Instant.now(), 1);
+        		throw e;
+        	}
+        	
+        	
+        	lenum.add(DtsStat.SENT_MSG_SPOOLED);
+        	
     	
-	
-	
-    	if (message instanceof TextMessage) {
-    		lenum.add(DtsStat.SENT_MSG_TEXT);
-    	} else if (message instanceof MenuDisplayMessage) {
-    		lenum.add(DtsStat.SENT_MSG_MENU_DISPLAY);
-    	} else if (message instanceof MediaMessage) {
-    		lenum.add(DtsStat.SENT_MSG_MEDIA);
-    	} else if (message instanceof InvitationMessage) {
-    		lenum.add(DtsStat.SENT_MSG_INVITATION);
-    	} else if (message instanceof ContextualMenuUpdate) {
-    		lenum.add(DtsStat.SENT_MSG_CTX_MENU_UPDATE);
-    	} else if (message instanceof ReceiptsMessage) {
-    		ReceiptsMessage rm = (ReceiptsMessage) message;
-    		for (MessageReceiptOptions o: rm.getReceipts()) {
-    			switch (o.getState()) {
-    			case RECEIVED: {
-    				lenum.add(DtsStat.RECEIVED_MSG_RECEIVED);
-    				break;
-    			}
-    			case CREATED: {
-    				lenum.add(DtsStat.RECEIVED_MSG_CREATED);
-    				break;
-    			}
-    			case SUBMITTED: {
-    				lenum.add(DtsStat.RECEIVED_MSG_SUBMITTED);
-    				break;
-    			}
-    			case VIEWED: {
-    				lenum.add(DtsStat.RECEIVED_MSG_VIEWED);
-    				break;
-    			}
-    			case DELETED: {
-    				lenum.add(DtsStat.RECEIVED_MSG_DELETED);
-    				break;
-    			}
-    			}
-    		}
+    	
+        	if (message instanceof TextMessage) {
+        		lenum.add(DtsStat.SENT_MSG_TEXT);
+        	} else if (message instanceof MenuDisplayMessage) {
+        		lenum.add(DtsStat.SENT_MSG_MENU_DISPLAY);
+        	} else if (message instanceof MediaMessage) {
+        		lenum.add(DtsStat.SENT_MSG_MEDIA);
+        	} else if (message instanceof InvitationMessage) {
+        		lenum.add(DtsStat.SENT_MSG_INVITATION);
+        	} else if (message instanceof ContextualMenuUpdate) {
+        		lenum.add(DtsStat.SENT_MSG_CTX_MENU_UPDATE);
+        	} else if (message instanceof ReceiptsMessage) {
+        		ReceiptsMessage rm = (ReceiptsMessage) message;
+        		for (MessageReceiptOptions o: rm.getReceipts()) {
+        			switch (o.getState()) {
+        			case RECEIVED: {
+        				lenum.add(DtsStat.RECEIVED_MSG_RECEIVED);
+        				break;
+        			}
+        			case CREATED: {
+        				lenum.add(DtsStat.RECEIVED_MSG_CREATED);
+        				break;
+        			}
+        			case SUBMITTED: {
+        				lenum.add(DtsStat.RECEIVED_MSG_SUBMITTED);
+        				break;
+        			}
+        			case VIEWED: {
+        				lenum.add(DtsStat.RECEIVED_MSG_VIEWED);
+        				break;
+        			}
+        			case DELETED: {
+        				lenum.add(DtsStat.RECEIVED_MSG_DELETED);
+        				break;
+        			}
+        			}
+        		}
+        	} else {
+        		lenum.add(DtsStat.SENT_MSG_OTHERS);
+        	}
+        	
+        	
+        	
+        	statProducer.spool(OrchestratorStatClass.DTS.toString(), Controller.getDtsConfig().getId(), lenum, Instant.now(), 1);
+    		
+    		
+    		
     	} else {
-    		lenum.add(DtsStat.SENT_MSG_OTHERS);
+    		logger.error("sendMessage: ignoring message as DTS not registered " + JsonUtil.serialize(message, false));
     	}
     	
     	
-    	
-    	statProducer.spool(OrchestratorStatClass.DTS.toString(), Controller.getDtsConfig().getId(), lenum, Instant.now(), 1);
-		
-		
-		
 		
 		
     }

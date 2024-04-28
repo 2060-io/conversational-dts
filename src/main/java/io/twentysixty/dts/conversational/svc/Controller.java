@@ -72,7 +72,7 @@ public class Controller {
 	
 	@RestClient
 	@Inject
-	DtsResource conversationalServiceResource;
+	DtsResource dtsServiceResource;
 	
 	@Inject
 	MtConsumer mtConsumer;
@@ -154,7 +154,7 @@ public class Controller {
 						// null config, getting
 						
 						try {
-							Response getMyServiceResponse = conversationalServiceResource.get(entityId);
+							Response getMyServiceResponse = dtsServiceResource.get(entityId);
 							
 							if (getMyServiceResponse.getStatus()<300) {
 								dtsConfig = (DtsVO) getMyServiceResponse.readEntity(DtsVO.class);
@@ -268,7 +268,7 @@ public class Controller {
 							// my entity
 							
 							try {
-								Response getMyServiceResponse = conversationalServiceResource.get(entityId);
+								Response getMyServiceResponse = dtsServiceResource.get(entityId);
 								if (getMyServiceResponse.getStatus()<300) {
 									
 									dtsConfig = (DtsVO) getMyServiceResponse.readEntity(DtsVO.class);
