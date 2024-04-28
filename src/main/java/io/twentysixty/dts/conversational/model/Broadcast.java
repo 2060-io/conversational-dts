@@ -51,9 +51,9 @@ public class Broadcast implements Serializable {
 	
 	private UUID campaignScheduleId;
 	
-	private Integer successCount;
-
-	private Integer paCount;
+	private Integer submittedCount;
+	private Integer receivedCount;
+	private Integer viewedCount;
 	
 	private CampaignManagement management;
 	
@@ -116,21 +116,7 @@ public class Broadcast implements Serializable {
 		this.campaignScheduleId = campaignScheduleId;
 	}
 
-	public Integer getSuccessCount() {
-		return successCount;
-	}
-
-	public void setSuccessCount(Integer successCount) {
-		this.successCount = successCount;
-	}
-
-	public Integer getPaCount() {
-		return paCount;
-	}
-
-	public void setPaCount(Integer paCount) {
-		this.paCount = paCount;
-	}
+	
 
 	public CampaignManagement getManagement() {
 		return management;
@@ -146,6 +132,30 @@ public class Broadcast implements Serializable {
 
 	public void setRunWhenTs(Instant runWhenTs) {
 		this.runWhenTs = runWhenTs;
+	}
+
+	public Integer getSubmittedCount() {
+		return submittedCount;
+	}
+
+	public void setSubmittedCount(Integer submittedCount) {
+		this.submittedCount = submittedCount;
+	}
+
+	public Integer getReceivedCount() {
+		return receivedCount;
+	}
+
+	public void setReceivedCount(Integer receivedCount) {
+		this.receivedCount = receivedCount;
+	}
+
+	public Integer getViewedCount() {
+		return viewedCount;
+	}
+
+	public void setViewedCount(Integer viewedCount) {
+		this.viewedCount = viewedCount;
 	}
 
 	

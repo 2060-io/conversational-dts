@@ -19,6 +19,7 @@ import com.mobiera.commons.util.JsonUtil;
 import com.mobiera.ms.commons.stats.api.StatEnum;
 
 import io.twentysixty.dts.conversational.jms.MtProducer;
+import io.twentysixty.dts.conversational.jms.StatProducer;
 import io.twentysixty.dts.conversational.model.Broadcast;
 import io.twentysixty.orchestrator.api.CmSchedule;
 import io.twentysixty.orchestrator.api.RegisterResponse;
@@ -27,6 +28,7 @@ import io.twentysixty.orchestrator.api.vo.CampaignVO;
 import io.twentysixty.orchestrator.res.c.CampaignScheduleResource;
 import io.twentysixty.orchestrator.stats.CampaignStat;
 import io.twentysixty.orchestrator.stats.DtsStat;
+import io.twentysixty.orchestrator.stats.OrchestratorStatClass;
 import io.twentysixty.sa.client.model.message.BaseMessage;
 import io.twentysixty.sa.client.model.message.ContextualMenuSelect;
 import io.twentysixty.sa.client.model.message.InvitationMessage;
@@ -50,7 +52,7 @@ public class BcastService {
 	private static Logger logger = Logger.getLogger(BcastService.class);
 
 	@Inject EntityManager em;
-
+	@Inject StatProducer statProducer;
 	@Inject Controller controller;
 	@Inject CacheService cacheService;
 	@Inject MtProducer mtProducer;
@@ -206,10 +208,6 @@ public class BcastService {
 	}
 
 
-
-
-
-
 	public Float getQueueUsage() {
 		return 0f;
 	}
@@ -217,7 +215,8 @@ public class BcastService {
 
 
 
-	public void threadIdChecker(UUID threadId, BaseMessage message) {
+	@Transactional
+	public void threadIdChecker(UUID threadId, BaseMessage message) throws Exception {
 		// called when a message is received
 		io.twentysixty.dts.conversational.model.Thread th = em.find(io.twentysixty.dts.conversational.model.Thread.class, threadId);
 		if (th != null) {
@@ -233,19 +232,29 @@ public class BcastService {
 		        			switch (o.getState()) {
 		        			case RECEIVED: {
 		        				lenum.add(CampaignStat.RECEIVED);
+		        				bcast.setReceivedCount(bcast.getReceivedCount()+1);
+		        				em.merge(bcast);
 		        				break;
 		        			}
 		        			case SUBMITTED: {
 		        				lenum.add(CampaignStat.SUBMITTED);
+		        				bcast.setSubmittedCount(bcast.getSubmittedCount()+1);
+		        				em.merge(bcast);
 		        				break;
 		        			}
 		        			case VIEWED: {
 		        				lenum.add(CampaignStat.VIEWED);
+		        				bcast.setViewedCount(bcast.getViewedCount()+1);
+		        				em.merge(bcast);
 		        				break;
 		        			}
-		        			
+		        			default: {
+		        				break;
+		        			}
 		        			}
 		        		}
+		            	statProducer.spool(OrchestratorStatClass.DTS.toString(), Controller.getDtsConfig().getId(), lenum, Instant.now(), 1);
+
 		        	}
 				}
 			}
@@ -295,7 +304,7 @@ public class BcastService {
 
 
 	@Transactional
-	public UUID getBroadcastForScheduled(UUID campaignId, UUID connectionId, boolean onlyIfNoPa) {
+	public UUID getBroadcastForScheduled(UUID campaignId, UUID connectionId, boolean onlyIfNotViewed) {
 		
 		Broadcast session = null;
 		Query q = this.em.createNamedQuery("Broadcast.findForConnectionCampaign");
@@ -312,16 +321,17 @@ public class BcastService {
 			session = new Broadcast();
 			session.setCampaignId(campaignId);
 			session.setConnectionId(connectionId);
-			session.setSuccessCount(0);
+			session.setViewedCount(0);
+			session.setReceivedCount(0);
+			session.setSubmittedCount(0);
 			session.setTs(Instant.now());
 			session.setManagement(campaign.getManagement());
-			session.setPaCount(0);
 			session.setLastSentTs(Instant.now());
 			em.persist(session);
 			
 			
 		} else {
-			if ((!onlyIfNoPa) || (session.getPaCount() == null) || (session.getPaCount() == 0)) {
+			if ((!onlyIfNotViewed) || (session.getViewedCount() == null) || (session.getViewedCount() == 0)) {
 				session.setLastSentTs(Instant.now());
 				session = em.merge(session);
 			} else {
