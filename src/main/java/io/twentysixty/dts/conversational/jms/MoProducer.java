@@ -32,7 +32,7 @@ import jakarta.jms.ConnectionFactory;
 
 
 @ApplicationScoped
-public class MoProducer extends AbstractProducer implements ProducerInterface {
+public class MoProducer extends AbstractProducer<BaseMessage> {
 
 	@Inject
     ConnectionFactory _connectionFactory;

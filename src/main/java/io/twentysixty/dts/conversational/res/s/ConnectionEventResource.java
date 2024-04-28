@@ -6,7 +6,7 @@ import org.jboss.logging.Logger;
 import com.fasterxml.jackson.core.JsonProcessingException;
 
 import io.twentysixty.dts.conversational.svc.Controller;
-import io.twentysixty.dts.conversational.svc.Service;
+import io.twentysixty.dts.conversational.svc.MessagingService;
 import io.twentysixty.sa.client.model.event.ConnectionStateUpdated;
 import io.twentysixty.sa.client.model.event.DidExchangeState;
 import io.twentysixty.sa.client.res.s.ConnectionEventInterface;
@@ -24,7 +24,7 @@ public class ConnectionEventResource implements ConnectionEventInterface {
 
 	private static Logger logger = Logger.getLogger(ConnectionEventResource.class);
 
-	@Inject Service service;
+	@Inject MessagingService service;
 	
 	@Inject Controller controller;
 

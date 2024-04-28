@@ -1,4 +1,4 @@
-package io.twentysixty.sa.res.c;
+package io.twentysixty.sa.res.c.v1;
 
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 

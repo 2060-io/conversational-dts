@@ -19,19 +19,19 @@ import com.mobiera.ms.commons.stats.api.StatEvent;
 import io.quarkus.runtime.ShutdownEvent;
 import io.quarkus.runtime.StartupEvent;
 import io.twentysixty.dts.conversational.svc.Controller;
+import io.twentysixty.sa.client.jms.AbstractProducer;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 import jakarta.jms.ConnectionFactory;
 import jakarta.jms.JMSContext;
-import jakarta.jms.JMSException;
 import jakarta.jms.JMSProducer;
 import jakarta.jms.ObjectMessage;
 import jakarta.jms.Queue;
 
 
 @ApplicationScoped
-public class StatProducer extends AbstractProducer {
+public class StatProducer extends AbstractProducer<StatEvent> {
 
 	@Inject
     ConnectionFactory connectionFactory;
@@ -48,7 +48,9 @@ public class StatProducer extends AbstractProducer {
 
 	@Inject Controller controller;
 
-	
+	@Inject
+    ConnectionFactory _connectionFactory;
+
 	
 	private static Object contextLockObj = new Object();
 	private static final Logger logger = Logger.getLogger(StatProducer.class);
@@ -60,7 +62,17 @@ public class StatProducer extends AbstractProducer {
     
     void onStart(@Observes StartupEvent ev) {
     	logger.info("onStart: queue name " + _queueName);
-    	this.setProducerCount(_threads);
+    	 	//logger.info("onStart: BeProducer");
+
+        	this.setExDelay(_exDelay);
+    		this.setDebug(controller.isDebugEnabled());
+    		this.setQueueName(_queueName);
+    		this.setThreads(_threads);
+    		this.setConnectionFactory(_connectionFactory);
+
+        	this.setProducerCount(_threads);
+
+        
     }
 
     void onStop(@Observes ShutdownEvent ev) {
@@ -71,7 +83,7 @@ public class StatProducer extends AbstractProducer {
     		UUID entityId, 
     		List<StatEnum> enums, 
     		Instant ts, 
-    		Integer increment) throws JMSException {
+    		Integer increment) throws Exception {
     	
     	
     	List<StatEnum> statEnums = new ArrayList<StatEnum>(enums.size());
@@ -85,7 +97,7 @@ public class StatProducer extends AbstractProducer {
     	event.setIncrement(increment);
     	event.setTs(ts);
     	event.setStatClass(statClass);
-    	this.spool(event);
+    	this.spool(event, 0);
     }
     
     public void spool(
@@ -93,7 +105,7 @@ public class StatProducer extends AbstractProducer {
     		UUID entityId, 
     		StatEnum statEnum, 
     		Instant ts, 
-    		int increment) throws JMSException {
+    		int increment) throws Exception {
     	
     	StatEvent event = new StatEvent();
     	event.setEntityId(entityId.toString());
@@ -103,69 +115,9 @@ public class StatProducer extends AbstractProducer {
     	event.setIncrement(increment);
     	event.setTs(ts);
     	event.setStatClass(statClass);
-    	this.spool(event);
-    }
-    
-    
-    public void spool(StatEvent event) throws JMSException {
     	this.spool(event, 0);
     }
-    public void spool(StatEvent event, int attempt) throws JMSException {
-    	
-    	JMSProducer producer = null;
-    	JMSContext context = null;
-    	boolean retry = false;
-    	
-    	try {
-    		
-    		Pair<Integer, Pair<JMSContext, JMSProducer>> jms = getProducer(connectionFactory, controller.isDebugEnabled());
-    		
-    		producer = jms.getRight().getRight();
-    		context = jms.getRight().getLeft();
-    		id = jms.getLeft();
-    		
-        	
-        	ObjectMessage message = context.createObjectMessage(event);
-        	
-        	
-        	
-        	synchronized (producer) {
-        		Queue queue = this.getQueue(context);
-        		producer.send(queue, message);
-            	message.acknowledge();
-        	}
-        	
-        	if (controller.isDebugEnabled()) {
-        		try {
-    				logger.info("spool: stat event spooled to " + _queueName + ":" + JsonUtil.serialize(event, false));
-    			} catch (JsonProcessingException e) {
-    				logger.error("", e);
-    			}
-        	}
-        	
-        	
-    	} catch (Exception e) {
-
-    		this.purgeAllProducers();
-   			logger.error("error", e);
- 			attempt++;
- 			if (attempt<_threads) {
- 				logger.info("spool: will retry attempt #" + attempt);
- 				retry = true;
- 			} else {
- 				throw (e);
- 			}
-    	}
-    	
-    	if (retry) this.spool(event, attempt);
-    }
-
-    private Queue queue = null;
-	private Queue getQueue(JMSContext context) {
-		if (queue == null) {
-			
-			queue = context.createQueue(_queueName);
-		}
-		return queue;
-	}
+    
+    
+   
 }

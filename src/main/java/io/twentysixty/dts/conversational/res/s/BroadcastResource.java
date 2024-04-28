@@ -7,7 +7,8 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
 import io.twentysixty.dts.conversational.ex.NonexistentConnectionException;
-import io.twentysixty.dts.conversational.svc.Service;
+import io.twentysixty.dts.conversational.svc.BcastService;
+import io.twentysixty.dts.conversational.svc.MessagingService;
 import io.twentysixty.sa.client.model.message.BaseMessage;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
@@ -20,11 +21,11 @@ import jakarta.ws.rs.core.Response.Status;
 
 @Path("")
 public class BroadcastResource  {
-
+/*
 
 	private static Logger logger = Logger.getLogger(BroadcastResource.class);
 
-	@Inject Service service;
+	@Inject BcastService service;
 	
 
 
@@ -64,6 +65,6 @@ public class BroadcastResource  {
 		return Response.status(Status.OK).entity(lockedConnections).build();
 
 	}
-
+*/
 
 }

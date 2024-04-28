@@ -38,7 +38,7 @@ import io.twentysixty.sa.client.model.message.MenuSelectMessage;
 import io.twentysixty.sa.client.model.message.RequestedProofItem;
 import io.twentysixty.sa.client.model.message.TextMessage;
 import io.twentysixty.sa.client.util.JsonUtil;
-import io.twentysixty.sa.res.c.CredentialTypeResource;
+import io.twentysixty.sa.res.c.v1.CredentialTypeResource;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
@@ -48,9 +48,9 @@ import jakarta.transaction.Transactional;
 
 
 @ApplicationScoped
-public class Service {
+public class MessagingService {
 
-	private static Logger logger = Logger.getLogger(Service.class);
+	private static Logger logger = Logger.getLogger(MessagingService.class);
 
 	@Inject EntityManager em;
 
@@ -239,44 +239,6 @@ public class Service {
 
 	}
 
-
-	private static  String broadcastSelectQuery =
-			"UPDATE session AS s1 SET nextBcTs=:nextBcTs WHERE s1.connectionId IN "
-					+ "( SELECT connectionId FROM session AS s2 where s2.nextBcTs<:now AND s2.nextBcTs>:minNextBcTs "
-					+ " LIMIT QTY FOR UPDATE SKIP LOCKED ) RETURNING s1.connectionId, s1.avatarName ";
-
-	@Transactional
-	public List<List<Object>> lockAndGetConnections(Integer qty) {
-
-
-
-		String query = broadcastSelectQuery.replaceFirst("QTY",  qty.toString());
-
-
-		Query q = em.createNativeQuery(query);
-		Instant now = Instant.now();
-
-
-
-		Instant lessDiscoIntervalTs = null;
-
-		// set +1h just in case sending generates exception, will be adjusted later
-		q.setParameter("nextBcTs", Instant.now().plusSeconds(3600l));
-		q.setParameter("now", now);
-		q.setParameter("minNextBcTs", Instant.now().minusSeconds(86400l * 365));
-
-		List<List<Object>>res = q.getResultList();
-		if (controller.isDebugEnabled()) {
-			if (res.size() >0) {
-				logger.info("getForDiscovery: " + query + " " + res);
-			} else {
-				logger.info("getForDiscovery: " + query + " no result" );
-			}
-		}
-
-
-		return res;
-	}
 
 
 

@@ -31,7 +31,7 @@ import jakarta.jms.ConnectionFactory;
 
 
 @ApplicationScoped
-public class MtProducer extends AbstractProducer {
+public class MtProducer extends AbstractProducer<BaseMessage> {
 
 	@Inject
     ConnectionFactory _connectionFactory;

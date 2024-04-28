@@ -13,7 +13,7 @@ import io.twentysixty.orchestrator.api.EntityStateChangeEvent;
 import io.twentysixty.sa.client.jms.AbstractConsumer;
 import io.twentysixty.sa.client.jms.ConsumerInterface;
 import io.twentysixty.sa.client.model.message.BaseMessage;
-import io.twentysixty.sa.res.c.MessageResource;
+import io.twentysixty.sa.res.c.v1.MessageResource;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;

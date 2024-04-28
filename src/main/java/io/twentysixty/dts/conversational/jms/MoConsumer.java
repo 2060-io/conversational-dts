@@ -12,7 +12,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import io.quarkus.runtime.ShutdownEvent;
 import io.quarkus.runtime.StartupEvent;
 import io.twentysixty.dts.conversational.svc.Controller;
-import io.twentysixty.dts.conversational.svc.Service;
+import io.twentysixty.dts.conversational.svc.MessagingService;
 import io.twentysixty.sa.client.jms.AbstractConsumer;
 import io.twentysixty.sa.client.jms.ConsumerInterface;
 import io.twentysixty.sa.client.model.event.MessageState;
@@ -28,7 +28,7 @@ import jakarta.jms.ConnectionFactory;
 @ApplicationScoped
 public class MoConsumer extends AbstractConsumer<BaseMessage> implements ConsumerInterface<BaseMessage> {
 
-	@Inject Service gaiaService;
+	@Inject MessagingService gaiaService;
 
 	@Inject
     ConnectionFactory _connectionFactory;
