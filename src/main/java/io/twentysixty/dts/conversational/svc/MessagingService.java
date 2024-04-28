@@ -53,12 +53,7 @@ public class MessagingService {
 	private static Logger logger = Logger.getLogger(MessagingService.class);
 
 	@Inject EntityManager em;
-
-	
-
 	@Inject MtProducer mtProducer;
-
-	
 	@Inject Controller controller;
 	
 

@@ -11,6 +11,7 @@ import com.mobiera.ms.commons.stats.api.StatEnum;
 
 import io.quarkus.runtime.ShutdownEvent;
 import io.quarkus.runtime.StartupEvent;
+import io.twentysixty.dts.conversational.svc.BcastService;
 import io.twentysixty.dts.conversational.svc.Controller;
 import io.twentysixty.orchestrator.stats.DtsStat;
 import io.twentysixty.orchestrator.stats.OrchestratorStatClass;
@@ -34,10 +35,8 @@ import jakarta.jms.ConnectionFactory;
 @ApplicationScoped
 public class MoProducer extends AbstractProducer<BaseMessage> {
 
-	@Inject
-    ConnectionFactory _connectionFactory;
-
-
+	@Inject ConnectionFactory _connectionFactory;
+	
 	@ConfigProperty(name = "io.twentysixty.dts.conversational.jms.ex.delay")
 	Long _exDelay;
 
@@ -133,7 +132,6 @@ public class MoProducer extends AbstractProducer<BaseMessage> {
         	} else {
         		lenum.add(DtsStat.SENT_MSG_OTHERS);
         	}
-        	
         	
         	
         	statProducer.spool(OrchestratorStatClass.DTS.toString(), Controller.getDtsConfig().getId(), lenum, Instant.now(), 1);

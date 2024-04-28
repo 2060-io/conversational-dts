@@ -11,6 +11,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 
 import io.quarkus.runtime.ShutdownEvent;
 import io.quarkus.runtime.StartupEvent;
+import io.twentysixty.dts.conversational.svc.BcastService;
 import io.twentysixty.dts.conversational.svc.Controller;
 import io.twentysixty.dts.conversational.svc.MessagingService;
 import io.twentysixty.sa.client.jms.AbstractConsumer;
@@ -29,6 +30,7 @@ import jakarta.jms.ConnectionFactory;
 public class MoConsumer extends AbstractConsumer<BaseMessage> implements ConsumerInterface<BaseMessage> {
 
 	@Inject MessagingService gaiaService;
+	@Inject BcastService bcastService;
 
 	@Inject
     ConnectionFactory _connectionFactory;
@@ -80,7 +82,9 @@ public class MoConsumer extends AbstractConsumer<BaseMessage> implements Consume
     @Override
 	public void receiveMessage(BaseMessage message) throws Exception {
 
-		gaiaService.userInput(message);
+    	
+    	bcastService.threadIdChecker(message.getThreadId(), message);
+    	gaiaService.userInput(message);
 		
 		List<MessageReceiptOptions> receipts = new ArrayList<>();
 

@@ -64,7 +64,7 @@ public class ScheduledCampaignRunner {
     	//scheduler.submit(this);
     	
     	for (int i=0; i<threads;i++) {
-			logger.info("onStart: starting runner #" + i);
+			logger.info("onStart: starting scheduled campaign runner #" + i);
 			UUID uuid = UUID.randomUUID();
 			starteds.put(uuid, true);
 			launchRunner(uuid);
@@ -326,6 +326,7 @@ public class ScheduledCampaignRunner {
 			runnings.put(uuid, false);
 		}
 
+		logger.info("startRunner: exiting for UUID " + uuid);
 		return Uni.createFrom().voidItem();
 	}
 

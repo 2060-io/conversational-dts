@@ -16,12 +16,25 @@ import org.jboss.logging.Logger;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.mobiera.commons.enums.EntityState;
 import com.mobiera.commons.util.JsonUtil;
+import com.mobiera.ms.commons.stats.api.StatEnum;
 
+import io.twentysixty.dts.conversational.jms.MtProducer;
+import io.twentysixty.dts.conversational.model.Broadcast;
 import io.twentysixty.orchestrator.api.CmSchedule;
 import io.twentysixty.orchestrator.api.RegisterResponse;
 import io.twentysixty.orchestrator.api.enums.App;
 import io.twentysixty.orchestrator.api.vo.CampaignVO;
 import io.twentysixty.orchestrator.res.c.CampaignScheduleResource;
+import io.twentysixty.orchestrator.stats.CampaignStat;
+import io.twentysixty.orchestrator.stats.DtsStat;
+import io.twentysixty.sa.client.model.message.BaseMessage;
+import io.twentysixty.sa.client.model.message.ContextualMenuSelect;
+import io.twentysixty.sa.client.model.message.InvitationMessage;
+import io.twentysixty.sa.client.model.message.MediaMessage;
+import io.twentysixty.sa.client.model.message.MenuSelectMessage;
+import io.twentysixty.sa.client.model.message.MessageReceiptOptions;
+import io.twentysixty.sa.client.model.message.ReceiptsMessage;
+import io.twentysixty.sa.client.model.message.TextMessage;
 import io.twentysixty.sa.res.c.v1.MessageResource;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -40,7 +53,7 @@ public class BcastService {
 
 	@Inject Controller controller;
 	@Inject CacheService cacheService;
-	
+	@Inject MtProducer mtProducer;
 	
 	
 	private Random random = new Random();
@@ -204,11 +217,120 @@ public class BcastService {
 
 
 
+	public void threadIdChecker(UUID threadId, BaseMessage message) {
+		// called when a message is received
+		io.twentysixty.dts.conversational.model.Thread th = em.find(io.twentysixty.dts.conversational.model.Thread.class, threadId);
+		if (th != null) {
+			UUID bcastId = th.getBroadcastId();
+			if (bcastId != null) {
+				Broadcast bcast = em.find(Broadcast.class, bcastId);
+				if (bcast != null) {
+					ArrayList<StatEnum> lenum = new ArrayList<StatEnum>(1);
+		        	
+					if (message instanceof ReceiptsMessage) {
+		        		ReceiptsMessage rm = (ReceiptsMessage) message;
+		        		for (MessageReceiptOptions o: rm.getReceipts()) {
+		        			switch (o.getState()) {
+		        			case RECEIVED: {
+		        				lenum.add(CampaignStat.RECEIVED);
+		        				break;
+		        			}
+		        			case SUBMITTED: {
+		        				lenum.add(CampaignStat.SUBMITTED);
+		        				break;
+		        			}
+		        			case VIEWED: {
+		        				lenum.add(CampaignStat.VIEWED);
+		        				break;
+		        			}
+		        			
+		        			}
+		        		}
+		        	}
+				}
+			}
+		}
+	}
 
 
-	public void runScheduledCampaign(UUID selectedConnection, UUID campaignFk, UUID csId) {
-		// TODO Auto-generated method stub
+	public void runScheduledCampaign(UUID selectedConnection, UUID campaignId, UUID csId) {
+		if (campaignId != null) {
+			try {
+				
+				
+				UUID broadcastId = this.getBroadcastForScheduled(campaignId, selectedConnection, false);
+				
+				if (broadcastId != null) {
+					runCampaign(campaignId, selectedConnection, csId, broadcastId, false);
+				} else {
+					if (Controller.getDtsConfig().getDebug()) {
+						logger.info("runScheduledCampaign: not running campaign " + campaignId + " for user " + selectedConnection);
+
+					}
+				}
+				
+			} catch (Exception e) {
+				logger.error("error running campaign " + campaignId + " for " + selectedConnection, e);
+			}
+			
+		}
+	}
+	
+	
+	
+	@Transactional
+	public void runCampaign(UUID campaignId, UUID selectedConnection, UUID csId, UUID broadcastId, boolean test) throws Exception {
+		CampaignVO campaign = cacheService.getCampaignVO(campaignId);
+		io.twentysixty.dts.conversational.model.Thread th = new io.twentysixty.dts.conversational.model.Thread();
+		th.setBroadcastId(broadcastId);
+		th.setConnectionId(selectedConnection);
+		th.setId(UUID.randomUUID());
+		th.setTs(Instant.now());
+		mtProducer.sendMessage(TextMessage.build(selectedConnection, th.getId(), "Test broadcast"));
+	}
+
+
+
+
+
+
+	@Transactional
+	public UUID getBroadcastForScheduled(UUID campaignId, UUID connectionId, boolean onlyIfNoPa) {
 		
+		Broadcast session = null;
+		Query q = this.em.createNamedQuery("Broadcast.findForConnectionCampaign");
+		q.setParameter("campaignId", campaignId);
+		q.setParameter("connectionId", connectionId);
+		session = (Broadcast) q.getResultList().stream().findFirst().orElse(null);
+		
+		CampaignVO campaign = cacheService.getCampaignVO(campaignId);
+		
+		if (session == null) {
+			if (Controller.getDtsConfig().getDebug()) {
+				logger.info("getBroadcastForScheduled: connectionId: " + connectionId + " no session for campaign " + campaign.getName() + " id: " + campaign.getId());
+			}
+			session = new Broadcast();
+			session.setCampaignId(campaignId);
+			session.setConnectionId(connectionId);
+			session.setSuccessCount(0);
+			session.setTs(Instant.now());
+			session.setManagement(campaign.getManagement());
+			session.setPaCount(0);
+			session.setLastSentTs(Instant.now());
+			em.persist(session);
+			
+			
+		} else {
+			if ((!onlyIfNoPa) || (session.getPaCount() == null) || (session.getPaCount() == 0)) {
+				session.setLastSentTs(Instant.now());
+				session = em.merge(session);
+			} else {
+				return null;
+			}
+			
+		}
+		
+		return session.getId();
 	}
 	
 	/*
