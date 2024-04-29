@@ -22,10 +22,11 @@ import com.mobiera.ms.commons.stats.api.StatEnum;
 import io.twentysixty.dts.conversational.ex.NonexistentConnectionException;
 import io.twentysixty.dts.conversational.jms.MtProducer;
 import io.twentysixty.dts.conversational.jms.StatProducer;
-import io.twentysixty.dts.conversational.model.Session;
+import io.twentysixty.dts.conversational.model.Connection;
 import io.twentysixty.orchestrator.stats.DtsStat;
 import io.twentysixty.orchestrator.stats.OrchestratorStatClass;
 import io.twentysixty.sa.client.model.credential.CredentialType;
+import io.twentysixty.sa.client.model.event.ConnectionStateUpdated;
 import io.twentysixty.sa.client.model.message.BaseMessage;
 import io.twentysixty.sa.client.model.message.ContextualMenuItem;
 import io.twentysixty.sa.client.model.message.ContextualMenuSelect;
@@ -79,13 +80,13 @@ public class MessagingService {
 	
 
 	@Transactional
-	public void newConnection(UUID connectionId) throws Exception {
+	public void newConnection(ConnectionStateUpdated csu) throws Exception {
 		UUID threadId = UUID.randomUUID();
 
-		Session session = this.getSession(connectionId);
+		Connection session = this.getConnection(csu.getConnectionId());
 
-		mtProducer.sendMessage(TextMessage.build(connectionId,threadId , this.getMessage("WELCOME")));
-		mtProducer.sendMessage(this.getRootMenu(connectionId, session));
+		mtProducer.sendMessage(TextMessage.build(csu.getConnectionId(),threadId , this.getMessage("WELCOME")));
+		mtProducer.sendMessage(this.getRootMenu(csu.getConnectionId(), session));
 
 		ArrayList<StatEnum> lenum = new ArrayList<StatEnum>(1);
 		lenum.add(DtsStat.ESTABLISHED_CONNECTION);
@@ -94,12 +95,21 @@ public class MessagingService {
 
 	}
 
+	@Transactional
+	public void deleteConnection(ConnectionStateUpdated csu) {
+		Connection session = this.getConnection(csu.getConnectionId());
+		if (session != null) {
+			session.setDeletedTs(Instant.now());
+		}
+		
+			
+	}
 
-	private Session getSession(UUID connectionId) {
-		Session session = em.find(Session.class, connectionId);
+	private Connection getConnection(UUID connectionId) {
+		Connection session = em.find(Connection.class, connectionId);
 		if (session == null) {
-			session = new Session();
-			session.setConnectionId(connectionId);
+			session = new Connection();
+			session.setId(connectionId);
 			Instant now = Instant.now();
 			session.setNextBcTs(now.plusSeconds(60l));
 			session.setCreatedTs(now);
@@ -141,7 +151,7 @@ public class MessagingService {
 	@Transactional
 	public void userInput(BaseMessage message) throws Exception {
 
-		Session session = this.getSession(message.getConnectionId());
+		Connection session = this.getConnection(message.getConnectionId());
 		String content = null;
 
 		if (message instanceof TextMessage) {
@@ -177,14 +187,14 @@ public class MessagingService {
 	}
 
 
-	private Session optout(Session session) {
+	private Connection optout(Connection session) {
 		session.setNextBcTs(null);
 		return em.merge(session);
 	}
 
 
 
-	private Session optin(Session session) {
+	private Connection optin(Connection session) {
 		session.setNextBcTs(Instant.now().plusSeconds(60));
 		return em.merge(session);
 		
@@ -192,7 +202,7 @@ public class MessagingService {
 
 
 
-	public BaseMessage getRootMenu(UUID connectionId, Session session) {
+	public BaseMessage getRootMenu(UUID connectionId, Connection session) {
 
 		ContextualMenuUpdate menu = new ContextualMenuUpdate();
 		menu.setTitle(getMessage("ROOT_MENU_DEFAULT_TITLE"));
@@ -240,7 +250,7 @@ public class MessagingService {
 
 	public void sendBaseMessage(UUID connectionId, BaseMessage message) throws Exception {
 
-		Session session = em.find(Session.class, connectionId);
+		Connection session = em.find(Connection.class, connectionId);
 		if (session == null) {
 			throw new NonexistentConnectionException();
 		}
@@ -253,7 +263,7 @@ public class MessagingService {
 
 	@Transactional
 	public void updateConnectionBcastTs(UUID connectionId) {
-		Session session = this.getSession(connectionId);
+		Connection session = this.getConnection(connectionId);
 		Instant now = Instant.now();
 		session.setLastBcTs(now);
 		session.setNextBcTs(now.plusSeconds(86400l * bcastIntervalDays));
@@ -264,5 +274,7 @@ public class MessagingService {
 		}
 		session = em.merge(session);
 	}
+
+	
 
 }

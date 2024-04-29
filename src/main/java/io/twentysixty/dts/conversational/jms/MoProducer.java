@@ -17,6 +17,10 @@ import io.twentysixty.orchestrator.stats.DtsStat;
 import io.twentysixty.orchestrator.stats.OrchestratorStatClass;
 import io.twentysixty.sa.client.jms.AbstractProducer;
 import io.twentysixty.sa.client.jms.ProducerInterface;
+import io.twentysixty.sa.client.model.event.ConnectionStateUpdated;
+import io.twentysixty.sa.client.model.event.Event;
+import io.twentysixty.sa.client.model.event.MessageReceived;
+import io.twentysixty.sa.client.model.event.MessageStateUpdated;
 import io.twentysixty.sa.client.model.message.BaseMessage;
 import io.twentysixty.sa.client.model.message.ContextualMenuSelect;
 import io.twentysixty.sa.client.model.message.InvitationMessage;
@@ -33,7 +37,7 @@ import jakarta.jms.ConnectionFactory;
 
 
 @ApplicationScoped
-public class MoProducer extends AbstractProducer<BaseMessage> {
+public class MoProducer extends AbstractProducer<Event> {
 
 	@Inject ConnectionFactory _connectionFactory;
 	
@@ -73,7 +77,7 @@ public class MoProducer extends AbstractProducer<BaseMessage> {
 
 
     @Override
-    public void sendMessage(BaseMessage message) throws Exception {
+    public void sendMessage(Event event) throws Exception {
     	
     	
     	if (Controller.getDtsConfig() != null) {
@@ -81,7 +85,7 @@ public class MoProducer extends AbstractProducer<BaseMessage> {
         	lenum.add(DtsStat.RECEIVED_MSG);
         	
         	try {
-        		this.spool(message, 0);
+        		this.spool(event, 0);
         	} catch (Exception e) {
         		lenum.add(DtsStat.RECEIVED_MSG_ERROR);
         		statProducer.spool(OrchestratorStatClass.DTS.toString(), Controller.getDtsConfig().getId(), lenum, Instant.now(), 1);
@@ -91,53 +95,76 @@ public class MoProducer extends AbstractProducer<BaseMessage> {
         	
         	lenum.add(DtsStat.RECEIVED_MSG_SPOOLED);
         	
-    	
-    	
-        	if (message instanceof TextMessage) {
-        		lenum.add(DtsStat.RECEIVED_MSG_TEXT);
-        	} else if (message instanceof MenuSelectMessage) {
-        		lenum.add(DtsStat.RECEIVED_MSG_MENU_SELECT_ANSWER);
-        	} else if (message instanceof MediaMessage) {
-        		lenum.add(DtsStat.RECEIVED_MSG_MEDIA);
-        	} else if (message instanceof InvitationMessage) {
-        		lenum.add(DtsStat.RECEIVED_MSG_INVITATION);
-        	} else if (message instanceof ContextualMenuSelect) {
-        		lenum.add(DtsStat.RECEIVED_MSG_CTX_MENU_SELECTION);
-        	} else if (message instanceof ReceiptsMessage) {
-        		ReceiptsMessage rm = (ReceiptsMessage) message;
-        		for (MessageReceiptOptions o: rm.getReceipts()) {
-        			switch (o.getState()) {
-        			case RECEIVED: {
-        				lenum.add(DtsStat.SENT_MSG_RECEIVED);
-        				break;
-        			}
-        			case CREATED: {
-        				lenum.add(DtsStat.SENT_MSG_CREATED);
-        				break;
-        			}
-        			case SUBMITTED: {
-        				lenum.add(DtsStat.SENT_MSG_SUBMITTED);
-        				break;
-        			}
-        			case VIEWED: {
-        				lenum.add(DtsStat.SENT_MSG_VIEWED);
-        				break;
-        			}
-        			case DELETED: {
-        				lenum.add(DtsStat.SENT_MSG_DELETED);
-        				break;
-        			}
-        			}
+        	if (event instanceof MessageReceived) {
+        		BaseMessage message = ((MessageReceived) event).getMessage();
+        		if (message instanceof TextMessage) {
+            		lenum.add(DtsStat.RECEIVED_MSG_TEXT);
+            	} else if (message instanceof MenuSelectMessage) {
+            		lenum.add(DtsStat.RECEIVED_MSG_MENU_SELECT_ANSWER);
+            	} else if (message instanceof MediaMessage) {
+            		lenum.add(DtsStat.RECEIVED_MSG_MEDIA);
+            	} else if (message instanceof InvitationMessage) {
+            		lenum.add(DtsStat.RECEIVED_MSG_INVITATION);
+            	} else if (message instanceof ContextualMenuSelect) {
+            		lenum.add(DtsStat.RECEIVED_MSG_CTX_MENU_SELECTION);
+            	} else {
+            		lenum.add(DtsStat.RECEIVED_MSG_OTHERS);
+            	}
+            	
+        	} else if (event instanceof MessageStateUpdated) {
+        		
+        		MessageStateUpdated msu = (MessageStateUpdated) event;
+        		switch (msu.getState()) {
+	        		case RECEIVED: {
+	     				lenum.add(DtsStat.SENT_MSG_RECEIVED);
+	     				break;
+	     			}
+	     			case CREATED: {
+	     				lenum.add(DtsStat.SENT_MSG_CREATED);
+	     				break;
+	     			}
+	     			case SUBMITTED: {
+	     				lenum.add(DtsStat.SENT_MSG_SUBMITTED);
+	     				break;
+	     			}
+	     			case VIEWED: {
+	     				lenum.add(DtsStat.SENT_MSG_VIEWED);
+	     				break;
+	     			}
+	     			case DELETED: {
+	     				lenum.add(DtsStat.SENT_MSG_DELETED);
+	     				break;
+	     			}
+	     			default: {
+	     				break;
+	     			}
         		}
-        	} else {
-        		lenum.add(DtsStat.SENT_MSG_OTHERS);
+        	} else if (event instanceof ConnectionStateUpdated) {
+        		ConnectionStateUpdated csu = (ConnectionStateUpdated) event;
+        		switch (csu.getState()) {
+        			
+        			case COMPLETED: {
+	     				lenum.add(DtsStat.ESTABLISHED_CONNECTION);
+	     				break;
+	     			}
+	     			case TERMINATED: {
+	     				lenum.add(DtsStat.TERMINATED_CONNECTION);
+	     				break;
+	     			}
+	     			default: {
+	     				break;
+	     			}
+	        		
+        		}
         	}
+        	
+    	
         	
         	
         	statProducer.spool(OrchestratorStatClass.DTS.toString(), Controller.getDtsConfig().getId(), lenum, Instant.now(), 1);
     		
     	} else {
-    		logger.error("sendMessage: ignoring message as DTS not registered " + JsonUtil.serialize(message, false));
+    		logger.error("sendMessage: ignoring message as DTS not registered " + JsonUtil.serialize(event, false));
     	}
     	
     	

@@ -1,5 +1,6 @@
 package io.twentysixty.dts.conversational.svc;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
@@ -14,6 +15,9 @@ import org.graalvm.collections.Pair;
 import org.jboss.logging.Logger;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.mobiera.commons.enums.EntityState;
 import com.mobiera.commons.util.JsonUtil;
 import com.mobiera.ms.commons.stats.api.StatEnum;
@@ -21,6 +25,8 @@ import com.mobiera.ms.commons.stats.api.StatEnum;
 import io.twentysixty.dts.conversational.jms.MtProducer;
 import io.twentysixty.dts.conversational.jms.StatProducer;
 import io.twentysixty.dts.conversational.model.Broadcast;
+import io.twentysixty.dts.conversational.model.Event;
+import io.twentysixty.dts.conversational.model.Connection;
 import io.twentysixty.orchestrator.api.CmSchedule;
 import io.twentysixty.orchestrator.api.RegisterResponse;
 import io.twentysixty.orchestrator.api.enums.App;
@@ -29,6 +35,7 @@ import io.twentysixty.orchestrator.res.c.CampaignScheduleResource;
 import io.twentysixty.orchestrator.stats.CampaignStat;
 import io.twentysixty.orchestrator.stats.DtsStat;
 import io.twentysixty.orchestrator.stats.OrchestratorStatClass;
+import io.twentysixty.sa.client.model.event.MessageStateUpdated;
 import io.twentysixty.sa.client.model.message.BaseMessage;
 import io.twentysixty.sa.client.model.message.ContextualMenuSelect;
 import io.twentysixty.sa.client.model.message.InvitationMessage;
@@ -57,15 +64,20 @@ public class BcastService {
 	@Inject CacheService cacheService;
 	@Inject MtProducer mtProducer;
 	
+	@ConfigProperty(name = "io.twentysixty.orchestrator.bcast.scheduled.maxeachnhours")
+	Integer maxeachnhours;
+
+	
+	
 	
 	private Random random = new Random();
 	
 	
 	
 	private static  String broadcastSelectQuery =
-			"UPDATE session AS s1 SET nextBcTs=:nextBcTs WHERE s1.connectionId IN "
-					+ "( SELECT connectionId FROM session AS s2 where s2.nextBcTs<:now AND s2.nextBcTs>:minNextBcTs "
-					+ " LIMIT QTY FOR UPDATE SKIP LOCKED ) RETURNING s1.connectionId";
+			"UPDATE connection AS s1 SET nextBcTs=:nextBcTs WHERE s1.id IN "
+					+ "( SELECT id FROM connection AS s2 where s2.nextBcTs<:now AND s2.nextBcTs>:minNextBcTs and s2.deletedTs IS NULL"
+					+ " LIMIT QTY FOR UPDATE SKIP LOCKED ) RETURNING s1.id";
 
 	@Transactional
 	public List<UUID> lockAndGetConnections(Integer qty) {
@@ -216,49 +228,67 @@ public class BcastService {
 
 
 	@Transactional
-	public void threadIdChecker(UUID threadId, BaseMessage message) throws Exception {
+	public void messageStateChanged(MessageStateUpdated msu) throws Exception {
 		// called when a message is received
-		io.twentysixty.dts.conversational.model.Thread th = em.find(io.twentysixty.dts.conversational.model.Thread.class, threadId);
-		if (th != null) {
-			UUID bcastId = th.getBroadcastId();
-			if (bcastId != null) {
-				Broadcast bcast = em.find(Broadcast.class, bcastId);
+		
+		UUID id = msu.getMessageId();
+		
+		if (id != null) {
+			logger.info("messageStateChanged: " + JsonUtil.serialize(msu, false));
+			Event th = em.find(Event.class, id);
+			if (th != null) {
+				Broadcast bcast = th.getBroadcast();
+				
 				if (bcast != null) {
-					ArrayList<StatEnum> lenum = new ArrayList<StatEnum>(1);
-		        	
-					if (message instanceof ReceiptsMessage) {
-		        		ReceiptsMessage rm = (ReceiptsMessage) message;
-		        		for (MessageReceiptOptions o: rm.getReceipts()) {
-		        			switch (o.getState()) {
-		        			case RECEIVED: {
-		        				lenum.add(CampaignStat.RECEIVED);
-		        				bcast.setReceivedCount(bcast.getReceivedCount()+1);
-		        				em.merge(bcast);
-		        				break;
-		        			}
-		        			case SUBMITTED: {
-		        				lenum.add(CampaignStat.SUBMITTED);
-		        				bcast.setSubmittedCount(bcast.getSubmittedCount()+1);
-		        				em.merge(bcast);
-		        				break;
-		        			}
-		        			case VIEWED: {
-		        				lenum.add(CampaignStat.VIEWED);
-		        				bcast.setViewedCount(bcast.getViewedCount()+1);
-		        				em.merge(bcast);
-		        				break;
-		        			}
-		        			default: {
-		        				break;
-		        			}
-		        			}
-		        		}
+					
+						ArrayList<StatEnum> lenum = new ArrayList<StatEnum>(1);
+						
+						switch (msu.getState()) {
+	        			case RECEIVED: {
+	        				logger.info("messageStateChanged: RECEIVED: " + JsonUtil.serialize(msu, false));
+	        				
+	        				bcast.setSubmittedReceived(bcast.getSubmittedReceived()+1);
+	        				if (bcast.getSubmittedReceived()>=bcast.getMessageCount()) {
+	        					lenum.add(CampaignStat.RECEIVED);
+	        				}
+	        				th.setSubmittedReceived(true);
+	        				break;
+	        			}
+	        			case SUBMITTED: {
+	        				logger.info("messageStateChanged: SUBMITTED: " + JsonUtil.serialize(msu, false));
+
+	        				bcast.setSubmitted(bcast.getSubmitted()+1);
+	        				if (bcast.getSubmitted()>=bcast.getMessageCount()) {
+	        					lenum.add(CampaignStat.SUBMITTED);
+	        				}
+	        				
+	        				th.setSubmitted(true);
+	        				
+	        				break;
+	        			}
+	        			case VIEWED: {
+	        				
+	        				logger.info("messageStateChanged: VIEWED: " + JsonUtil.serialize(msu, false));
+
+	        				bcast.setSubmittedViewed(bcast.getSubmittedViewed()+1);
+	        				if (bcast.getSubmittedViewed()>=bcast.getMessageCount()) {
+	        					lenum.add(CampaignStat.VIEWED);
+	        				}
+	        				th.setSubmittedViewed(true);
+	        				
+	        				break;
+	        			}
+	        			default: {
+	        				break;
+	        			}
+	        			}
+						
 		            	statProducer.spool(OrchestratorStatClass.DTS.toString(), Controller.getDtsConfig().getId(), lenum, Instant.now(), 1);
 
-		        	}
 				}
 			}
 		}
+		
 	}
 
 
@@ -267,7 +297,7 @@ public class BcastService {
 			try {
 				
 				
-				UUID broadcastId = this.getBroadcastForScheduled(campaignId, selectedConnection, false);
+				UUID broadcastId = this.getBroadcastForScheduled(campaignId, selectedConnection, true);
 				
 				if (broadcastId != null) {
 					runCampaign(campaignId, selectedConnection, csId, broadcastId, false);
@@ -290,12 +320,49 @@ public class BcastService {
 	@Transactional
 	public void runCampaign(UUID campaignId, UUID selectedConnection, UUID csId, UUID broadcastId, boolean test) throws Exception {
 		CampaignVO campaign = cacheService.getCampaignVO(campaignId);
-		io.twentysixty.dts.conversational.model.Thread th = new io.twentysixty.dts.conversational.model.Thread();
-		th.setBroadcastId(broadcastId);
-		th.setConnectionId(selectedConnection);
-		th.setId(UUID.randomUUID());
-		th.setTs(Instant.now());
-		mtProducer.sendMessage(TextMessage.build(selectedConnection, th.getId(), "Test broadcast"));
+		Instant now = Instant.now();
+		
+		ObjectMapper om = new ObjectMapper(new YAMLFactory());
+		List<BaseMessage> messages = om.readValue(campaign.getYaml(), new TypeReference<List<BaseMessage>>() {});
+		
+		Connection connection = em.find(Connection.class, selectedConnection);
+		Broadcast bcast = em.find(Broadcast.class, broadcastId);
+		bcast.setSubmittedReceived(0);
+		bcast.setSubmittedViewed(0);
+		
+		
+		for (BaseMessage m: messages) {
+			
+			io.twentysixty.dts.conversational.model.Event ev = new io.twentysixty.dts.conversational.model.Event();
+			ev.setBroadcast(bcast);
+			ev.setConnection(connection);
+			ev.setId(UUID.randomUUID());
+			ev.setThreadId(UUID.randomUUID());
+			ev.setTs(now);
+			ev.setSubmitted(false);
+			ev.setSubmittedReceived(false);
+			ev.setSubmittedViewed(false);
+			em.persist(ev);
+			
+			m.setConnectionId(selectedConnection);
+			m.setThreadId(ev.getThreadId());
+			m.setId(ev.getId());
+			logger.info("runCampaign: sending message " + JsonUtil.serialize(messages, false));
+			mtProducer.sendMessage(m);
+			
+		}
+		
+		bcast.setSubmitted(messages.size());
+		
+		connection.setLastBcTs(now);
+		connection.setNextBcTs(Instant.now().plus(Duration.ofHours(maxeachnhours)));
+		if (connection.getSentBcasts() == null) {
+			connection.setSentBcasts(1);
+		} else {
+			connection.setSentBcasts(connection.getSentBcasts()+1);
+		}
+		em.merge(connection);
+		
 	}
 
 
@@ -306,41 +373,45 @@ public class BcastService {
 	@Transactional
 	public UUID getBroadcastForScheduled(UUID campaignId, UUID connectionId, boolean onlyIfNotViewed) {
 		
-		Broadcast session = null;
+		Connection connection = em.find(Connection.class, connectionId);
+		
+		Broadcast bcast = null;
 		Query q = this.em.createNamedQuery("Broadcast.findForConnectionCampaign");
 		q.setParameter("campaignId", campaignId);
-		q.setParameter("connectionId", connectionId);
-		session = (Broadcast) q.getResultList().stream().findFirst().orElse(null);
+		q.setParameter("connection", connection);
+		bcast = (Broadcast) q.getResultList().stream().findFirst().orElse(null);
+		
 		
 		CampaignVO campaign = cacheService.getCampaignVO(campaignId);
 		
-		if (session == null) {
+		if (bcast == null) {
 			if (Controller.getDtsConfig().getDebug()) {
 				logger.info("getBroadcastForScheduled: connectionId: " + connectionId + " no session for campaign " + campaign.getName() + " id: " + campaign.getId());
 			}
-			session = new Broadcast();
-			session.setCampaignId(campaignId);
-			session.setConnectionId(connectionId);
-			session.setViewedCount(0);
-			session.setReceivedCount(0);
-			session.setSubmittedCount(0);
-			session.setTs(Instant.now());
-			session.setManagement(campaign.getManagement());
-			session.setLastSentTs(Instant.now());
-			em.persist(session);
+			bcast = new Broadcast();
+			bcast.setId(UUID.randomUUID());
+			bcast.setCampaignId(campaignId);
+			bcast.setConnection(connection);
+			bcast.setSubmittedViewed(0);
+			bcast.setSubmittedReceived(0);
+			bcast.setSubmitted(0);
+			bcast.setTs(Instant.now());
+			bcast.setManagement(campaign.getManagement());
+			bcast.setLastSentTs(Instant.now());
+			em.persist(bcast);
 			
 			
 		} else {
-			if ((!onlyIfNotViewed) || (session.getViewedCount() == null) || (session.getViewedCount() == 0)) {
-				session.setLastSentTs(Instant.now());
-				session = em.merge(session);
+			if ((!onlyIfNotViewed) || (bcast.getSubmittedReceived() == null) || (bcast.getSubmittedReceived() == 0)) {
+				bcast.setLastSentTs(Instant.now());
+				bcast = em.merge(bcast);
 			} else {
 				return null;
 			}
 			
 		}
 		
-		return session.getId();
+		return bcast.getId();
 	}
 	
 	/*

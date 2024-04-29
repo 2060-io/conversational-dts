@@ -14,12 +14,22 @@ import io.quarkus.runtime.StartupEvent;
 import io.twentysixty.dts.conversational.svc.BcastService;
 import io.twentysixty.dts.conversational.svc.Controller;
 import io.twentysixty.dts.conversational.svc.MessagingService;
+import io.twentysixty.orchestrator.stats.DtsStat;
 import io.twentysixty.sa.client.jms.AbstractConsumer;
 import io.twentysixty.sa.client.jms.ConsumerInterface;
+import io.twentysixty.sa.client.model.event.ConnectionStateUpdated;
+import io.twentysixty.sa.client.model.event.Event;
+import io.twentysixty.sa.client.model.event.MessageReceived;
 import io.twentysixty.sa.client.model.event.MessageState;
+import io.twentysixty.sa.client.model.event.MessageStateUpdated;
 import io.twentysixty.sa.client.model.message.BaseMessage;
+import io.twentysixty.sa.client.model.message.ContextualMenuSelect;
+import io.twentysixty.sa.client.model.message.InvitationMessage;
+import io.twentysixty.sa.client.model.message.MediaMessage;
+import io.twentysixty.sa.client.model.message.MenuSelectMessage;
 import io.twentysixty.sa.client.model.message.MessageReceiptOptions;
 import io.twentysixty.sa.client.model.message.ReceiptsMessage;
+import io.twentysixty.sa.client.model.message.TextMessage;
 import io.twentysixty.sa.client.util.JsonUtil;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
@@ -27,11 +37,13 @@ import jakarta.inject.Inject;
 import jakarta.jms.ConnectionFactory;
 
 @ApplicationScoped
-public class MoConsumer extends AbstractConsumer<BaseMessage> implements ConsumerInterface<BaseMessage> {
+public class MoConsumer extends AbstractConsumer<Event> implements ConsumerInterface<Event> {
 
 	@Inject MessagingService gaiaService;
 	@Inject BcastService bcastService;
+	@Inject MessagingService messagingService;
 
+	
 	@Inject
     ConnectionFactory _connectionFactory;
 
@@ -80,45 +92,69 @@ public class MoConsumer extends AbstractConsumer<BaseMessage> implements Consume
     
    
     @Override
-	public void receiveMessage(BaseMessage message) throws Exception {
+	public void receiveMessage(Event event) throws Exception {
 
     	
-    	bcastService.threadIdChecker(message.getThreadId(), message);
-    	gaiaService.userInput(message);
-		
-		List<MessageReceiptOptions> receipts = new ArrayList<>();
+    	if (event instanceof MessageReceived) {
+    		BaseMessage message = ((MessageReceived) event).getMessage();
+    		
+    		gaiaService.userInput(message);
+    		
+    		List<MessageReceiptOptions> receipts = new ArrayList<>();
 
-		/*MessageReceiptOptions received = new MessageReceiptOptions();
-		received.setMessageId(event.getMessage().getId());
-		received.setTimestamp(Instant.now());
-		received.setState(MessageState.RECEIVED);
-		receipts.add(received);
-		*/
+    		
 
-		MessageReceiptOptions viewed = new MessageReceiptOptions();
-		viewed.setMessageId(message.getId());
-		viewed.setTimestamp(Instant.now());
-		viewed.setState(MessageState.VIEWED);
-		receipts.add(viewed);
+    		MessageReceiptOptions viewed = new MessageReceiptOptions();
+    		viewed.setMessageId(message.getId());
+    		viewed.setTimestamp(Instant.now());
+    		viewed.setState(MessageState.VIEWED);
+    		receipts.add(viewed);
 
-		ReceiptsMessage r = new ReceiptsMessage();
-		r.setConnectionId(message.getConnectionId());
-		r.setReceipts(receipts);
+    		ReceiptsMessage r = new ReceiptsMessage();
+    		r.setConnectionId(message.getConnectionId());
+    		r.setReceipts(receipts);
 
-		
-		
-		try {
-			mtProducer.sendMessage(r);
-			
-			
-		} catch (Exception e) {
-			logger.error("", e);
-		}
+    		
+    		
+    		try {
+    			mtProducer.sendMessage(r);
+    		} catch (Exception e) {
+    			logger.error("", e);
+    		}
 
+    	} else if (event instanceof MessageStateUpdated) {
+    		MessageStateUpdated msu = (MessageStateUpdated) event;
+    		
+    		
+    		bcastService.messageStateChanged(msu);
+        	
+    		
+    	} else if (event instanceof ConnectionStateUpdated) {
+    		ConnectionStateUpdated csu = (ConnectionStateUpdated) event;
+    		
+    		switch (csu.getState()) {
+    		case COMPLETED: {
+    			messagingService.newConnection(csu);
+    			break;
+    		}
+    		case TERMINATED: {
+    			messagingService.deleteConnection(csu);
+    			break;
+    		}
+    		default: {
+    			logger.warn("receiveMessage: ignoring message (not implemented) " + JsonUtil.serialize(csu, false));
+    		}
+    		}
+    		
+    	}
+    	
+    	
+    	
+    	
 
 		if (controller.isDebugEnabled()) {
 			try {
-				logger.info("messageReceived: sent receipts:" + JsonUtil.serialize(r, false));
+				logger.info("receiveMessage: event:" + JsonUtil.serialize(event, false));
 			} catch (JsonProcessingException e) {
 				logger.error("", e);
 			}

@@ -37,7 +37,7 @@ public class MessageEventResource implements MessageEventInterface {
 
 
 	@Inject MoProducer moProducer;
-	@Inject MtProducer mtProducer;
+	//@Inject MtProducer mtProducer;
 
 	@Inject Controller controller;
 
@@ -60,7 +60,7 @@ public class MessageEventResource implements MessageEventInterface {
 
 		try {
 			
-			moProducer.sendMessage(event.getMessage());
+			moProducer.sendMessage(event);
 		} catch (Exception e) {
 			logger.error("", e);
 			return  Response.status(Status.INTERNAL_SERVER_ERROR).build();
@@ -89,7 +89,7 @@ public class MessageEventResource implements MessageEventInterface {
 			}
 		}
 		
-		
+		/*
 		List<MessageReceiptOptions> receipts = new ArrayList<>();
 
 		
@@ -102,9 +102,9 @@ public class MessageEventResource implements MessageEventInterface {
 		ReceiptsMessage r = new ReceiptsMessage();
 		r.setConnectionId(event.getConnectionId());
 		r.setReceipts(receipts);
-
+		 */
 		try {
-			moProducer.sendMessage(r);
+			moProducer.sendMessage(event);
 		} catch (Exception e) {
 			logger.error("", e);
 			return  Response.status(Status.INTERNAL_SERVER_ERROR).build();

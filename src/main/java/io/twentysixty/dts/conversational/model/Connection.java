@@ -20,19 +20,17 @@ import jakarta.persistence.Table;
  *
  */
 @Entity
-@Table(name="session")
 @DynamicUpdate
 @DynamicInsert
 @NamedQueries({
-	//@NamedQuery(name="Session.findWithToken", query="SELECT s FROM Session s where s.token=:token"),
 
 })
-public class Session implements Serializable {
+public class Connection implements Serializable {
 	private static final long serialVersionUID = 1L;
 
 
 	@Id
-	private UUID connectionId;
+	private UUID id;
 
 
 	@Column(columnDefinition="text")
@@ -42,6 +40,9 @@ public class Session implements Serializable {
 
 	@Column(columnDefinition="timestamptz")
 	private Instant createdTs;
+
+	@Column(columnDefinition="timestamptz")
+	private Instant deletedTs;
 
 
 
@@ -57,16 +58,6 @@ public class Session implements Serializable {
 
 
 	private Integer sentBcasts;
-
-
-
-	public UUID getConnectionId() {
-		return connectionId;
-	}
-
-	public void setConnectionId(UUID connectionId) {
-		this.connectionId = connectionId;
-	}
 
 
 
@@ -126,6 +117,22 @@ public class Session implements Serializable {
 
 	public void setSentBcasts(Integer sentBcasts) {
 		this.sentBcasts = sentBcasts;
+	}
+
+	public Instant getDeletedTs() {
+		return deletedTs;
+	}
+
+	public void setDeletedTs(Instant deletedTs) {
+		this.deletedTs = deletedTs;
+	}
+
+	public UUID getId() {
+		return id;
+	}
+
+	public void setId(UUID id) {
+		this.id = id;
 	}
 
 

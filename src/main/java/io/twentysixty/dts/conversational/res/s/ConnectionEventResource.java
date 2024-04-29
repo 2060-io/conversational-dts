@@ -5,6 +5,7 @@ import org.jboss.logging.Logger;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 
+import io.twentysixty.dts.conversational.jms.MoProducer;
 import io.twentysixty.dts.conversational.svc.Controller;
 import io.twentysixty.dts.conversational.svc.MessagingService;
 import io.twentysixty.sa.client.model.event.ConnectionStateUpdated;
@@ -28,6 +29,8 @@ public class ConnectionEventResource implements ConnectionEventInterface {
 	
 	@Inject Controller controller;
 
+	@Inject MoProducer moProducer;
+	
 	@Override
 	@POST
 	@Path("/connection-state-updated")
@@ -40,7 +43,10 @@ public class ConnectionEventResource implements ConnectionEventInterface {
 				logger.error("", e);
 			}
 		}
-		if (event.getState().equals(DidExchangeState.COMPLETED)) {
+		
+		/*
+		switch (event.getState()) {
+		case COMPLETED: {
 			try {
 				service.newConnection(event.getConnectionId());
 			} catch (Exception e) {
@@ -48,8 +54,33 @@ public class ConnectionEventResource implements ConnectionEventInterface {
 				logger.error("", e);
 				return  Response.status(Status.INTERNAL_SERVER_ERROR).build();
 			}
+			break;
 		}
+		case TERMINATED: {
+			try {
+				service.archiveConnection(event.getConnectionId());
+			} catch (Exception e) {
 
+				logger.error("", e);
+				return  Response.status(Status.INTERNAL_SERVER_ERROR).build();
+			}
+			break;
+		}
+		}
+		
+		if (event.getState().equals(DidExchangeState.COMPLETED)) {
+			
+		}
+		*/
+		
+		try {
+			
+			moProducer.sendMessage(event);
+		} catch (Exception e) {
+			logger.error("", e);
+			return  Response.status(Status.INTERNAL_SERVER_ERROR).build();
+		}
+		
 		return  Response.status(Status.OK).build();
 
 	}

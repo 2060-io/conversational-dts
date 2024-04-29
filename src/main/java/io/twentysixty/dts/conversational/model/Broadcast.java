@@ -9,6 +9,8 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.NamedQueries;
 import jakarta.persistence.NamedQuery;
 import jakarta.persistence.SequenceGenerator;
@@ -28,7 +30,7 @@ import io.twentysixty.orchestrator.api.enums.CampaignManagement;
 @DynamicUpdate
 @DynamicInsert
 @NamedQueries({
-	@NamedQuery(name="Broadcast.findForConnectionCampaign", query="SELECT s FROM Broadcast s WHERE s.connectionId=:connectionId and s.campaignId=:campaignId"),
+	@NamedQuery(name="Broadcast.findForConnectionCampaign", query="SELECT s FROM Broadcast s WHERE s.connection=:connection and s.campaignId=:campaignId"),
 	
 })
 public class Broadcast implements Serializable {
@@ -39,7 +41,11 @@ public class Broadcast implements Serializable {
 
 	@Column(columnDefinition="timestamptz")
 	private Instant ts;
-	private UUID connectionId;
+	
+	@ManyToOne
+	@JoinColumn(name="connectionid")
+	private Connection connection;
+	
 	private UUID campaignId;
 	
 		
@@ -51,9 +57,11 @@ public class Broadcast implements Serializable {
 	
 	private UUID campaignScheduleId;
 	
-	private Integer submittedCount;
-	private Integer receivedCount;
-	private Integer viewedCount;
+	private Integer messageCount;
+	private Integer submitted;
+	private Integer submittedReceived;
+	private Integer submittedViewed;
+	
 	
 	private CampaignManagement management;
 	
@@ -76,13 +84,6 @@ public class Broadcast implements Serializable {
 		this.ts = ts;
 	}
 
-	public UUID getConnectionId() {
-		return connectionId;
-	}
-
-	public void setConnectionId(UUID connectionId) {
-		this.connectionId = connectionId;
-	}
 
 	public UUID getCampaignId() {
 		return campaignId;
@@ -134,30 +135,47 @@ public class Broadcast implements Serializable {
 		this.runWhenTs = runWhenTs;
 	}
 
-	public Integer getSubmittedCount() {
-		return submittedCount;
+	public Integer getSubmitted() {
+		return submitted;
 	}
 
-	public void setSubmittedCount(Integer submittedCount) {
-		this.submittedCount = submittedCount;
+	public void setSubmitted(Integer submitted) {
+		this.submitted = submitted;
 	}
 
-	public Integer getReceivedCount() {
-		return receivedCount;
+	public Integer getSubmittedReceived() {
+		return submittedReceived;
 	}
 
-	public void setReceivedCount(Integer receivedCount) {
-		this.receivedCount = receivedCount;
+	public void setSubmittedReceived(Integer submittedReceived) {
+		this.submittedReceived = submittedReceived;
 	}
 
-	public Integer getViewedCount() {
-		return viewedCount;
+	public Integer getSubmittedViewed() {
+		return submittedViewed;
 	}
 
-	public void setViewedCount(Integer viewedCount) {
-		this.viewedCount = viewedCount;
+	public void setSubmittedViewed(Integer submittedViewed) {
+		this.submittedViewed = submittedViewed;
 	}
 
+	public Connection getConnection() {
+		return connection;
+	}
+
+	public void setConnection(Connection connection) {
+		this.connection = connection;
+	}
+
+	public Integer getMessageCount() {
+		return messageCount;
+	}
+
+	public void setMessageCount(Integer messageCount) {
+		this.messageCount = messageCount;
+	}
+
+	
 	
 	
 	
