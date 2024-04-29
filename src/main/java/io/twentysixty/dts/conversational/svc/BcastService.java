@@ -324,7 +324,7 @@ public class BcastService {
 		
 		ObjectMapper om = new ObjectMapper(new YAMLFactory());
 		List<BaseMessage> messages = om.readValue(campaign.getYaml(), new TypeReference<List<BaseMessage>>() {});
-		
+				
 		Connection connection = em.find(Connection.class, selectedConnection);
 		Broadcast bcast = em.find(Broadcast.class, broadcastId);
 		bcast.setSubmittedReceived(0);
