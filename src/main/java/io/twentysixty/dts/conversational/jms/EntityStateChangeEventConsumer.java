@@ -31,11 +31,11 @@ public class EntityStateChangeEventConsumer extends AbstractConsumer<EntityState
     ConnectionFactory _connectionFactory;
 
 
-	@ConfigProperty(name = "io.twentysixty.dts.conversational.jms.ex.delay")
+	@ConfigProperty(name = "io.twentysixty.dts.jms.ex.delay")
 	Long _exDelay;
 
 	
-	@ConfigProperty(name = "io.twentysixty.dts.conversational.jms.event.consumer.threads")
+	@ConfigProperty(name = "io.twentysixty.dts.jms.event.consumer.threads")
 	Integer _threads;
 
 	@Inject Controller controller;

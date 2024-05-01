@@ -1,0 +1,270 @@
+#   dtst:name of variable in orchestrator:priority in variable form:what to replace
+# Namespace
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: demos-main #dtst:namespace:10:demos-main
+  
+---
+
+# Service
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: conversational-dts #dtst:dtsName:1:conversational-dts
+  namespace: demos-main #dtst:namespace:10:demos-main
+spec:
+  selector:
+    app: conversational-dts
+  ports:
+  - name: didcomm
+    port: 3001
+    targetPort: 3001
+    protocol: TCP
+  - name: admin
+    port: 3000
+    targetPort: 3000
+    protocol: TCP
+  - name: q
+    port: 2601
+    targetPort: 2601
+    protocol: TCP
+    
+---
+
+
+# Ingress public
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: conversational-dts-public #dtst:dtsName:1:conversational-dts
+  namespace: demos-main #dtst:namespace:10:demos-main
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - conversational-dts.demos.2060.io #dtst:dtsName:1:conversational-dts
+      secretName: public.conversational-dts.demos.2060.io-cert #dtst:dtsName:1:conversational-dts
+  rules:
+    - host: conversational-dts.demos.2060.io #dtst:dtsName:1:conversational-dts
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                 name: conversational-dts #dtst:dtsName:1:conversational-dts
+                 port:
+                   number: 3001
+    - host: q.conversational-dts.demos.2060.io #dtst:dtsName:1:conversational-dts
+      http:
+        paths:
+          - path: /avatar.png
+            pathType: Prefix
+            backend:
+              service:
+                 name: conversational-dts #dtst:dtsName:1:conversational-dts
+                 port:
+                   number: 2601
+
+---
+
+# Ingress ds
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: conversational-dts-ds #dtst:dtsName:1:conversational-dts
+  namespace: demos-main #dtst:namespace:10:demos-main
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/whitelist-source-range: "X.X.X.X/32" #dtst:kubernetesPrivateAccessIp:1:X.X.X.X/32
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - q.conversational-dts.demos.2060.io #dtst:dtsName:1:conversational-dts
+      secretName: ds-conversational-dts.demos.2060.io-cert #dtst:dtsName:1:conversational-dts
+  rules:
+    - host: q.conversational-dts.demos.2060.io #dtst:dtsName:1:conversational-dts
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                 name: conversational-dts #dtst:dtsName:1:conversational-dts
+                 port:
+                   number: 2601
+
+---
+
+
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+   name: conversational-dts #dtst:dtsName:1:conversational-dts
+   namespace: demos-main #dtst:namespace:10:demos-main
+   labels:
+      app: nginx
+spec:
+   serviceName: "conversational-dts" #dtst:dtsName::conversational-dts
+   replicas: 1 #dtst:replicas:0:1
+   selector:
+      matchLabels:
+         app: conversational-dts #dtst:dtsName::conversational-dts
+   template:
+      metadata:
+         labels:
+            app: conversational-dts #dtst:dtsName::conversational-dts
+      spec:
+         containers:
+         -  name: conversational-dts-sa-container #dtst:dtsName::conversational-dts
+            image: io2060/2060-service-agent:dev
+            imagePullPolicy: Always
+            env:
+            - name: AGENT_ENDPOINT
+              value: "wss://conversational-dts.demos.2060.io:443" #dtst:dtsName:1:conversational-dts
+            - name: AGENT_LABEL
+              value: "Welcome!" #dtst:agentLabel:2:Welcome!
+            - name: AGENT_INVITATION_IMAGE_URL
+              value: "https://q.conversational-dts.demos.2060.io/avatar.png" #dtst:dtsName:1:conversational-dts
+            - name: EVENTS_BASE_URL
+              value: "http://localhost:2601"
+            - name: AGENT_PUBLIC_DID
+              value: "did:web:conversational-dts.demos.2060.io" #dtst:dtsName:1:conversational-dts
+            - name: ANONCREDS_SERVICE_BASE_URL
+              value: "https://conversational-dts.demos.2060.io" #dtst:dtsName:1:conversational-dts
+            volumeMounts:
+            - name: conversational-dts-sa-pv-main #dtst:dtsName:1:conversational-dts
+              mountPath: /root/.afj
+            ports:
+            -  containerPort: 3000
+            -  containerPort: 3001
+         -  name: conversational-dts-backend-container #dtst:dtsName:1:conversational-dts
+            image: io2060/conversational-dts:main
+            imagePullPolicy: Always
+            env: 
+            - name: IO_TWENTYSIXTY_DTS_ORCHESTRATOR 
+              value: "true" 
+            - name: IO_TWENTYSIXTY_DTS_APP 
+              value: "DTS" 
+            - name: IO_TWENTYSIXTY_DTS_ENTITY_ID 
+              value: "6902dc8e-8d57-4506-8cf8-cf1fd527809c" #dtst:dtsId:1:6902dc8e-8d57-4506-8cf8-cf1fd527809c
+            - name: IO_TWENTYSIXTY_DTS_LANGUAGE 
+              value: "en" #dtst:language:1:en
+            - name: IO_TWENTYSIXTY_DTS_BCAST_SCHEDULED_THREADS 
+              value: "1" #dtst:broadcastThreads:1:1
+            - name: IO_TWENTYSIXTY_DTS_BCAST_SCHEDULED_SLEEP 
+              value: "3000" 
+            - name: IO_TWENTYSIXTY_DTS_BCAST_SCHEDULED_QTY 
+              value: "20" #dtst:broadcastPerIteration:1:20
+            - name: IO_TWENTYSIXTY_DTS_BCAST_SCHEDULED_MAXEACHNHOURS 
+              value: "24" #dtst:broadcastIntervalHours:1:24
+            - name: IO_TWENTYSIXTY_DTS_JMS_MO_CONSUMER_THREADS 
+              value: "1" 
+            - name: IO_TWENTYSIXTY_DTS_JMS_MO_PRODUCER_THREADS 
+              value: "1" 
+            - name: IO_TWENTYSIXTY_DTS_JMS_MO_QUEUE_NAME 
+              value: "conversational-dts-mo" #dtst:dtsName::conversational-dts
+            - name: IO_TWENTYSIXTY_DTS_JMS_MT_CONSUMER_THREADS 
+              value: "1" 
+            - name: IO_TWENTYSIXTY_DTS_JMS_MT_PRODUCER_THREADS 
+              value: "1" 
+            - name: IO_TWENTYSIXTY_DTS_JMS_MT_QUEUE_NAME 
+              value: "conversational-dts-mt" #dtst:dtsName::conversational-dts
+            - name: IO_TWENTYSIXTY_DTS_JMS_STATS_PRODUCER_THREADS 
+              value: "1" 
+            - name: IO_TWENTYSIXTY_DTS_JMS_STATS_QUEUE_NAME 
+              value: "dts-stats" 
+            - name: IO_TWENTYSIXTY_DTS_JMS_EVENT_CONSUMER_THREADS 
+              value: "1" 
+            - name: IO_TWENTYSIXTY_DTS_JMS_EVENT_IGNORE_AFTER_MS 
+              value: "5000" 
+            - name: IO_TWENTYSIXTY_DTS_JMS_EX_DELAY 
+              value: "10000" 
+            - name: QUARKUS_REST_CLIENT__IO_TWENTYSIXTY_ORCHESTRATOR_RES_C_REGISTERRESOURCE__URL 
+              value: "http://localhost:2601/" #dtst:orchestratorUrl:1:http://localhost:2601/
+            - name: QUARKUS_REST_CLIENT__IO_TWENTYSIXTY_ORCHESTRATOR_RES_C_PARAMETERRESOURCE__URL 
+              value: "http://localhost:2601/" #dtst:orchestratorUrl:1:http://localhost:2601/
+            - name: QUARKUS_REST_CLIENT__IO_TWENTYSIXTY_ORCHESTRATOR_RES_C_DTSRESOURCE__URL 
+              value: "http://localhost:2601/" #dtst:orchestratorUrl:1:http://localhost:2601/
+            - name: QUARKUS_REST_CLIENT__IO_TWENTYSIXTY_ORCHESTRATOR_RES_C_CAMPAIGNRESOURCE__URL 
+              value: "http://localhost:2601/" #dtst:orchestratorUrl:1:http://localhost:2601/
+            - name: QUARKUS_REST_CLIENT__IO_TWENTYSIXTY_ORCHESTRATOR_RES_C_CAMPAIGNSCHEDULERESOURCE__URL 
+              value: "http://localhost:2601/" #dtst:orchestratorUrl:1:http://localhost:2601/
+            - name: IO_TWENTYSIXTY_ORCHESTRATOR_REGISTER_MIN_WAIT 
+              value: "5000" 
+            - name: IO_TWENTYSIXTY_ORCHESTRATOR_CACHE_LIFETIME 
+              value: "5000" 
+            - name: IO_TWENTYSIXTY_SA_RES_C_CREDENTIALTYPERESOURCE_MP_REST_URL 
+              value: "http://localhost:3000/" #dtst:serviceAgentUrl:2:http://localhost:3000/
+            - name: IO_TWENTYSIXTY_SA_RES_C_MESSAGERESOURCE_MP_REST_URL 
+              value: "http://localhost:3000/" #dtst:serviceAgentUrl:2:http://localhost:3000/
+            - name: QUARKUS_DATASOURCE_DB_KIND 
+              value: "postgresql" 
+            - name: QUARKUS_DATASOURCE_JDBC_MAXSIZE 
+              value: "8" 
+            - name: QUARKUS_DATASOURCE_JDBC_MINSIZE 
+              value: "2" 
+            - name: QUARKUS_DATASOURCE_JDBC_URL 
+              value: "jdbc:postgresql://localhost:5432/dts" #dtst:datasourceUrl:3:jdbc:postgresql://localhost:5432/dts
+            - name: QUARKUS_DATASOURCE_USERNAME 
+              value: "dts" #dtst:databaseUsername:3:dts
+            - name: QUARKUS_DATASOURCE_PASSWORD 
+              value: "dts" #dtst:databasePassword:3:dts
+            - name: QUARKUS_HIBERNATE_ORM_DATABASE_GENERATION 
+              value: "update" 
+            - name: QUARKUS_HTTP_HOST 
+              value: "0.0.0.0" 
+            - name: QUARKUS_HTTP_PORT 
+              value: "2602" 
+            - name: QUARKUS_ARTEMIS_ENABLED 
+              value: "true" 
+            - name: QUARKUS_ARTEMIS_URL 
+              value: "tcp://localhost:61616" #dtst:artemisUrl:4:tcp://localhost:61616
+            - name: QUARKUS_ARTEMIS_USERNAME 
+              value: "quarkus" #dtst:artemisUsername:4:quarkus
+            - name: QUARKUS_ARTEMIS_PASSWORD 
+              value: "quarkus" #dtst:artemisPassword:4:quarkus
+            ports:
+            -  containerPort: 2602
+         -  name: postgres
+            image: postgres:15.2
+            imagePullPolicy: Always
+            env:
+            - name: POSTGRES_PASSWORD
+              value: "dts" #dtst:databasePassword:3:dts
+            - name: POSTGRES_USER
+              value: "dts" #dtst:databaseUsername:3:dts
+            - name: PGDATA
+              value: "/var/lib/postgresql/data/pgdata"
+            ports:
+            -  containerPort: 5432
+            volumeMounts:
+            - name: conversational-dts-pg-pv-main #dtst:dtsName::conversational-dts
+              mountPath: /var/lib/postgresql/data
+   volumeClaimTemplates: 
+   - metadata:
+       name: conversational-dts-sa-pv-main #dtst:dtsName::conversational-dts
+     spec:
+       storageClassName: csi-cinder-classic #dtst:storageClassName:0:csi-cinder-classic
+       accessModes:
+       - "ReadWriteOnce"
+       resources:
+         requests:
+           storage: 1Gi
+   - metadata:
+       name: conversational-dts-pg-pv-main #dtst:dtsName::conversational-dts
+     spec:
+       storageClassName: csi-cinder-classic #dtst:storageClassName:0:csi-cinder-classic
+       accessModes:
+       - "ReadWriteOnce"
+       resources:
+         requests:
+           storage: 1Gi

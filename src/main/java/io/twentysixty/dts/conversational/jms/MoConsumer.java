@@ -48,14 +48,14 @@ public class MoConsumer extends AbstractConsumer<Event> implements ConsumerInter
     ConnectionFactory _connectionFactory;
 
 
-	@ConfigProperty(name = "io.twentysixty.dts.conversational.jms.ex.delay")
+	@ConfigProperty(name = "io.twentysixty.dts.jms.ex.delay")
 	Long _exDelay;
 
 
-	@ConfigProperty(name = "io.twentysixty.dts.conversational.jms.mo.queue.name")
+	@ConfigProperty(name = "io.twentysixty.dts.jms.mo.queue.name")
 	String _queueName;
 
-	@ConfigProperty(name = "io.twentysixty.dts.conversational.jms.mo.consumer.threads")
+	@ConfigProperty(name = "io.twentysixty.dts.jms.mo.consumer.threads")
 	Integer _threads;
 
 	

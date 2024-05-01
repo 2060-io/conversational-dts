@@ -52,7 +52,7 @@ public class Controller {
 	@ConfigProperty(name = "io.twentysixty.orchestrator.register.min.wait")
 	Long minimumRegisterWaitTimeMs;
 
-	@ConfigProperty(name = "io.twentysixty.dts.conversational.jms.event.ignore.after.ms")
+	@ConfigProperty(name = "io.twentysixty.dts.jms.event.ignore.after.ms")
 	Long ignoreEventsOlderThanMs;
 	
 	

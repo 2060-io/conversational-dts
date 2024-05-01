@@ -28,14 +28,14 @@ public class MtConsumer extends AbstractConsumer<BaseMessage> implements Consume
     ConnectionFactory _connectionFactory;
 
 
-	@ConfigProperty(name = "io.twentysixty.dts.conversational.jms.ex.delay")
+	@ConfigProperty(name = "io.twentysixty.dts.jms.ex.delay")
 	Long _exDelay;
 
 
-	@ConfigProperty(name = "io.twentysixty.dts.conversational.jms.mt.queue.name")
+	@ConfigProperty(name = "io.twentysixty.dts.jms.mt.queue.name")
 	String _queueName;
 
-	@ConfigProperty(name = "io.twentysixty.dts.conversational.jms.mt.consumer.threads")
+	@ConfigProperty(name = "io.twentysixty.dts.jms.mt.consumer.threads")
 	Integer _threads;
 
 	@Inject Controller controller;

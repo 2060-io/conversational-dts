@@ -59,12 +59,12 @@ public class MessagingService {
 	
 
 	
-	@ConfigProperty(name = "io.twentysixty.dts.conversational.bcast.interval.days")
+	/*@ConfigProperty(name = "io.twentysixty.dts.bcast.interval.days")
 	Integer bcastIntervalDays;
-
+*/
 	
 	
-	@ConfigProperty(name = "io.twentysixty.dts.conversational.language")
+	@ConfigProperty(name = "io.twentysixty.dts.language")
 	Optional<String> language;
 
 
@@ -257,10 +257,10 @@ public class MessagingService {
 		message.setConnectionId(connectionId);
 		mtProducer.sendMessage(message);
 
-		updateConnectionBcastTs(connectionId);
+		//updateConnectionBcastTs(connectionId);
 	}
 
-
+/*
 	@Transactional
 	public void updateConnectionBcastTs(UUID connectionId) {
 		Connection session = this.getConnection(connectionId);
@@ -275,6 +275,6 @@ public class MessagingService {
 		session = em.merge(session);
 	}
 
-	
+	*/
 
 }

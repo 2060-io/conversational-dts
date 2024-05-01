@@ -32,7 +32,7 @@ services:
       - AGENT_ENDPOINT=wss://p2603.ovpndev.2060.io
       - ANONCREDS_SERVICE_BASE_URL=https://p2603.ovpndev.2060.io
       - AGENT_INVITATION_IMAGE_URL=https://p2602.ovpndev.2060.io/avatar.png
-      - AGENT_NAME=Welcome
+      - AGENT_LABEL=Welcome
       - USE_CORS=true
       - EVENTS_BASE_URL=https://p2602.ovpndev.2060.io
     volumes:

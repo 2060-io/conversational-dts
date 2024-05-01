@@ -37,13 +37,13 @@ public class StatProducer extends AbstractProducer<StatEvent> {
     ConnectionFactory connectionFactory;
 
 	
-	@ConfigProperty(name = "io.twentysixty.dts.conversational.jms.ex.delay")
+	@ConfigProperty(name = "io.twentysixty.dts.jms.ex.delay")
 	Long _exDelay;
 
-	@ConfigProperty(name = "io.twentysixty.dts.conversational.jms.stats.queue.name")
+	@ConfigProperty(name = "io.twentysixty.dts.jms.stats.queue.name")
 	String _queueName;
 
-	@ConfigProperty(name = "io.twentysixty.dts.conversational.jms.stats.producer.threads")
+	@ConfigProperty(name = "io.twentysixty.dts.jms.stats.producer.threads")
 	Integer _threads;
 
 	@Inject Controller controller;

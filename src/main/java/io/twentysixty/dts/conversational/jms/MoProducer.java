@@ -41,13 +41,13 @@ public class MoProducer extends AbstractProducer<Event> {
 
 	@Inject ConnectionFactory _connectionFactory;
 	
-	@ConfigProperty(name = "io.twentysixty.dts.conversational.jms.ex.delay")
+	@ConfigProperty(name = "io.twentysixty.dts.jms.ex.delay")
 	Long _exDelay;
 
-	@ConfigProperty(name = "io.twentysixty.dts.conversational.jms.mo.queue.name")
+	@ConfigProperty(name = "io.twentysixty.dts.jms.mo.queue.name")
 	String _queueName;
 
-	@ConfigProperty(name = "io.twentysixty.dts.conversational.jms.mo.producer.threads")
+	@ConfigProperty(name = "io.twentysixty.dts.jms.mo.producer.threads")
 	Integer _threads;
 
 	@Inject Controller controller;

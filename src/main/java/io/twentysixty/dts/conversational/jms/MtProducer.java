@@ -37,13 +37,13 @@ public class MtProducer extends AbstractProducer<BaseMessage> {
     ConnectionFactory _connectionFactory;
 
 	
-	@ConfigProperty(name = "io.twentysixty.dts.conversational.jms.ex.delay")
+	@ConfigProperty(name = "io.twentysixty.dts.jms.ex.delay")
 	Long _exDelay;
 
-	@ConfigProperty(name = "io.twentysixty.dts.conversational.jms.mt.queue.name")
+	@ConfigProperty(name = "io.twentysixty.dts.jms.mt.queue.name")
 	String _queueName;
 
-	@ConfigProperty(name = "io.twentysixty.dts.conversational.jms.mt.producer.threads")
+	@ConfigProperty(name = "io.twentysixty.dts.jms.mt.producer.threads")
 	Integer _threads;
 
 	@Inject Controller controller;

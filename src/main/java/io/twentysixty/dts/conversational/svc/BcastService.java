@@ -64,7 +64,7 @@ public class BcastService {
 	@Inject CacheService cacheService;
 	@Inject MtProducer mtProducer;
 	
-	@ConfigProperty(name = "io.twentysixty.orchestrator.bcast.scheduled.maxeachnhours")
+	@ConfigProperty(name = "io.twentysixty.dts.bcast.scheduled.maxeachnhours")
 	Integer maxeachnhours;
 
 	

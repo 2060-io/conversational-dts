@@ -36,13 +36,13 @@ public class ScheduledCampaignRunner {
 	BcastService bcastService;
 	
 	
-	@ConfigProperty(name = "io.twentysixty.orchestrator.bcast.scheduled.threads")
+	@ConfigProperty(name = "io.twentysixty.dts.bcast.scheduled.threads")
 	Integer threads;
 	
-	@ConfigProperty(name = "io.twentysixty.orchestrator.bcast.scheduled.sleep")
+	@ConfigProperty(name = "io.twentysixty.dts.bcast.scheduled.sleep")
 	Long sleep;
 	
-	@ConfigProperty(name = "io.twentysixty.orchestrator.bcast.scheduled.qty")
+	@ConfigProperty(name = "io.twentysixty.dts.bcast.scheduled.qty")
 	Integer qty;
 	
 	@Inject StatProducer statProducer;
