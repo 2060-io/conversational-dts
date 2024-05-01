@@ -17,7 +17,7 @@ metadata:
   namespace: demos-main #dtst:namespace:10:demos-main
 spec:
   selector:
-    app: conversational-dts
+    app: conversational-dts #dtst:dtsName:1:conversational-dts
   ports:
   - name: didcomm
     port: 3001
@@ -28,8 +28,8 @@ spec:
     targetPort: 3000
     protocol: TCP
   - name: q
-    port: 2601
-    targetPort: 2601
+    port: 2602
+    targetPort: 2602
     protocol: TCP
     
 ---
@@ -48,10 +48,11 @@ spec:
   ingressClassName: nginx
   tls:
     - hosts:
-        - conversational-dts.demos.2060.io #dtst:dtsName:1:conversational-dts
-      secretName: public.conversational-dts.demos.2060.io-cert #dtst:dtsName:1:conversational-dts
+        - conversational-dts.demos.2060.io #dtst:urlBase:1:conversational-dts.demos.2060.io
+        - q.conversational-dts.demos.2060.io #dtst:urlBase:1:conversational-dts.demos.2060.io
+      secretName: public.conversational-dts.demos.2060.io-cert #dtst:urlBase:1:conversational-dts.demos.2060.io
   rules:
-    - host: conversational-dts.demos.2060.io #dtst:dtsName:1:conversational-dts
+    - host: conversational-dts.demos.2060.io #dtst:urlBase:1:conversational-dts.demos.2060.io
       http:
         paths:
           - path: /
@@ -61,7 +62,7 @@ spec:
                  name: conversational-dts #dtst:dtsName:1:conversational-dts
                  port:
                    number: 3001
-    - host: q.conversational-dts.demos.2060.io #dtst:dtsName:1:conversational-dts
+    - host: q.conversational-dts.demos.2060.io #dtst:urlBase:1:conversational-dts.demos.2060.io
       http:
         paths:
           - path: /avatar.png
@@ -70,11 +71,11 @@ spec:
               service:
                  name: conversational-dts #dtst:dtsName:1:conversational-dts
                  port:
-                   number: 2601
+                   number: 2602
 
 ---
 
-# Ingress ds
+# Ingress private
 
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -88,10 +89,10 @@ spec:
   ingressClassName: nginx
   tls:
     - hosts:
-        - q.conversational-dts.demos.2060.io #dtst:dtsName:1:conversational-dts
-      secretName: ds-conversational-dts.demos.2060.io-cert #dtst:dtsName:1:conversational-dts
+        - q.conversational-dts.demos.2060.io #dtst:urlBase:1:conversational-dts.demos.2060.io
+      secretName: ds-conversational-dts.demos.2060.io-cert #dtst:urlBase:1:conversational-dts.demos.2060.io
   rules:
-    - host: q.conversational-dts.demos.2060.io #dtst:dtsName:1:conversational-dts
+    - host: q.conversational-dts.demos.2060.io #dtst:urlBase:1:conversational-dts.demos.2060.io
       http:
         paths:
           - path: /
@@ -100,7 +101,7 @@ spec:
               service:
                  name: conversational-dts #dtst:dtsName:1:conversational-dts
                  port:
-                   number: 2601
+                   number: 2602
 
 ---
 
@@ -129,17 +130,17 @@ spec:
             imagePullPolicy: Always
             env:
             - name: AGENT_ENDPOINT
-              value: "wss://conversational-dts.demos.2060.io:443" #dtst:dtsName:1:conversational-dts
+              value: "wss://conversational-dts.demos.2060.io:443" #dtst:urlBase:1:conversational-dts.demos.2060.io
             - name: AGENT_LABEL
               value: "Welcome!" #dtst:agentLabel:2:Welcome!
             - name: AGENT_INVITATION_IMAGE_URL
-              value: "https://q.conversational-dts.demos.2060.io/avatar.png" #dtst:dtsName:1:conversational-dts
+              value: "https://q.conversational-dts.demos.2060.io/avatar.png" #dtst:urlBase:1:conversational-dts.demos.2060.io
             - name: EVENTS_BASE_URL
-              value: "http://localhost:2601"
+              value: "http://localhost:2602"
             - name: AGENT_PUBLIC_DID
-              value: "did:web:conversational-dts.demos.2060.io" #dtst:dtsName:1:conversational-dts
+              value: "did:web:conversational-dts.demos.2060.io" #dtst:urlBase:1:conversational-dts.demos.2060.io
             - name: ANONCREDS_SERVICE_BASE_URL
-              value: "https://conversational-dts.demos.2060.io" #dtst:dtsName:1:conversational-dts
+              value: "https://conversational-dts.demos.2060.io" #dtst:urlBase:1:conversational-dts.demos.2060.io
             volumeMounts:
             - name: conversational-dts-sa-pv-main #dtst:dtsName:1:conversational-dts
               mountPath: /root/.afj
@@ -147,7 +148,7 @@ spec:
             -  containerPort: 3000
             -  containerPort: 3001
          -  name: conversational-dts-backend-container #dtst:dtsName:1:conversational-dts
-            image: io2060/conversational-dts:main
+            image: io2060/conversational-dts:dev
             imagePullPolicy: Always
             env: 
             - name: IO_TWENTYSIXTY_DTS_ORCHESTRATOR 
@@ -202,9 +203,9 @@ spec:
               value: "5000" 
             - name: IO_TWENTYSIXTY_ORCHESTRATOR_CACHE_LIFETIME 
               value: "5000" 
-            - name: IO_TWENTYSIXTY_SA_RES_C_CREDENTIALTYPERESOURCE_MP_REST_URL 
+            - name: QUARKUS_REST_CLIENT__IO_TWENTYSIXTY_SA_RES_C_V1_CREDENTIALTYPERESOURCE__URL 
               value: "http://localhost:3000/" #dtst:serviceAgentUrl:2:http://localhost:3000/
-            - name: IO_TWENTYSIXTY_SA_RES_C_MESSAGERESOURCE_MP_REST_URL 
+            - name: QUARKUS_REST_CLIENT__IO_TWENTYSIXTY_SA_RES_C_V1_MESSAGERESOURCE__URL 
               value: "http://localhost:3000/" #dtst:serviceAgentUrl:2:http://localhost:3000/
             - name: QUARKUS_DATASOURCE_DB_KIND 
               value: "postgresql" 
